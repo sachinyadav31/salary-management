@@ -1,0 +1,22 @@
+# Private notes / brief (not for the public repo)
+INCUBYTE_ASSESSMENT_CONTEXT.md
+*.docx
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Backend
+backend/build/
+backend/.gradle/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
