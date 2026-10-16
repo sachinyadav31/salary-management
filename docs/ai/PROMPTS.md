@@ -44,3 +44,13 @@ For each phase: plan → review the plan → implement test-first → run tests 
   `current_salary_usd_minor` (new migration V3, not an edit to V1, since applied migrations are immutable).
 - A test I wrote asked for `size=200` and failed. The cap of 100 was working as intended, so the test was fixed, not the code.
 - Measured 6–11 ms per query on 10k rows (see `PERFORMANCE.md`).
+
+### Phase 7 — Employee create / update / deactivate
+- Plan reviewed before coding: currency derived from country (invalid state unrepresentable), server-generated
+  employee codes, two-layer validation (Bean Validation for shape, service for business rules), soft delete.
+- Optimistic locking needs two guards: an explicit client-version check (catches a stale *form*; JPA alone can't,
+  since each request loads a fresh entity) plus JPA `@Version` (catches an in-flight race at commit). Both map to 409.
+- Commands (`EmployeeCommands`) are separate from HTTP DTOs so the domain has no web dependency; the controller
+  writes through the service and reads the response back from the query side (CQRS-lite).
+- Verified end to end on the 10k dataset: 201 + Location, stale save → 409, duplicate email → 409,
+  JPY with decimals → 400, deactivate bumps version.

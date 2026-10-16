@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -55,12 +56,16 @@ public class Employee {
     private Instant createdAt;
     private Instant updatedAt;
 
+    @Version
+    private long version;
+
     protected Employee() {
     }
 
     public Employee(String employeeCode, String firstName, String lastName, String email, Country country,
                     Department department, String jobTitle, JobLevel level, LocalDate hireDate,
                     Money currentSalary, Money currentSalaryUsd, Instant now) {
+        requireSalaryInCountryCurrency(currentSalary, country);
         this.employeeCode = employeeCode;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -76,6 +81,36 @@ public class Employee {
         this.currentSalaryUsdMinor = currentSalaryUsd.minorUnits();
         this.createdAt = now;
         this.updatedAt = now;
+    }
+
+    public void updateProfile(String firstName, String lastName, String email, Department department,
+                              String jobTitle, JobLevel level, Instant now) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.department = department;
+        this.jobTitle = jobTitle;
+        this.level = level;
+        this.updatedAt = now;
+    }
+
+    public void changeStatus(EmployeeStatus newStatus, Instant now) {
+        this.status = newStatus;
+        this.updatedAt = now;
+    }
+
+    private static void requireSalaryInCountryCurrency(Money salary, Country country) {
+        if (!salary.isPositive()) {
+            throw new IllegalArgumentException("Salary must be positive");
+        }
+        if (!salary.currencyCode().equals(country.getCurrencyCode())) {
+            throw new IllegalArgumentException("Salary currency %s does not match %s (%s)"
+                    .formatted(salary.currencyCode(), country.getName(), country.getCurrencyCode()));
+        }
+    }
+
+    public long getVersion() {
+        return version;
     }
 
     public Money getCurrentSalary() {

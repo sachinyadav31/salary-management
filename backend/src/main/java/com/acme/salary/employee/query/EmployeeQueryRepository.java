@@ -10,9 +10,11 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Read side of the employee directory. Plain SQL with bound parameters: selects only the columns the
@@ -25,6 +27,13 @@ public class EmployeeQueryRepository {
             from employee e
             join country c on c.code = e.country_code
             join department d on d.id = e.department_id
+            """;
+
+    private static final String COLUMNS = """
+            select e.id, e.employee_code, e.first_name, e.last_name, e.email, e.country_code,
+                   c.name as country_name, e.department_id, d.name as department_name, e.job_title, e.level,
+                   e.status, e.hire_date, e.current_salary_minor, e.current_salary_currency,
+                   e.current_salary_usd_minor, e.version, e.created_at, e.updated_at
             """;
 
     private static final RowMapper<EmployeeSummary> ROW_MAPPER = (rs, i) -> new EmployeeSummary(
@@ -59,16 +68,18 @@ public class EmployeeQueryRepository {
 
         params.addValue("limit", criteria.size());
         params.addValue("offset", (long) criteria.page() * criteria.size());
-        List<EmployeeSummary> rows = jdbc.query("""
-                select e.id, e.employee_code, e.first_name, e.last_name, e.email, e.country_code,
-                       c.name as country_name, e.department_id, d.name as department_name, e.job_title, e.level,
-                       e.status, e.hire_date, e.current_salary_minor, e.current_salary_currency,
-                       e.current_salary_usd_minor
-                """ + FROM + where
+        List<EmployeeSummary> rows = jdbc.query(COLUMNS + FROM + where
                 + " order by " + criteria.sort().orderBy() + ", e.id asc limit :limit offset :offset",
                 params, ROW_MAPPER);
 
         return PageResponse.of(rows, criteria.page(), criteria.size(), total == null ? 0 : total);
+    }
+
+    public Optional<EmployeeDetail> findDetail(long id) {
+        return jdbc.query(COLUMNS + FROM + " where e.id = :id", new MapSqlParameterSource("id", id),
+                (rs, i) -> new EmployeeDetail(ROW_MAPPER.mapRow(rs, i), rs.getLong("version"),
+                        Instant.parse(rs.getString("created_at")), Instant.parse(rs.getString("updated_at"))))
+                .stream().findFirst();
     }
 
     private static String whereClause(EmployeeSearchCriteria c, MapSqlParameterSource params) {

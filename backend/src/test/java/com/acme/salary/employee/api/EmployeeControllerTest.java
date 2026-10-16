@@ -1,10 +1,14 @@
 package com.acme.salary.employee.api;
 
+import com.acme.salary.common.ConflictException;
 import com.acme.salary.common.Money;
 import com.acme.salary.common.web.MoneyView;
 import com.acme.salary.common.web.PageResponse;
+import com.acme.salary.employee.EmployeeCommands.CreateEmployee;
+import com.acme.salary.employee.EmployeeService;
 import com.acme.salary.employee.EmployeeStatus;
 import com.acme.salary.employee.JobLevel;
+import com.acme.salary.employee.query.EmployeeDetail;
 import com.acme.salary.employee.query.EmployeeQueryRepository;
 import com.acme.salary.employee.query.EmployeeSearchCriteria;
 import com.acme.salary.employee.query.EmployeeSortField;
@@ -17,11 +21,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +41,7 @@ class EmployeeControllerTest {
 
     @Autowired MockMvcTester mvc;
     @MockitoBean EmployeeQueryRepository queries;
+    @MockitoBean EmployeeService service;
 
     private static final EmployeeSummary AKIRA = new EmployeeSummary(7, "E00007", "Akira", "Ito", "Akira Ito",
             "akira.ito.7@acme.example", "JP", "Japan", 1, "Engineering", "Software Engineer", JobLevel.L2,
@@ -88,5 +100,90 @@ class EmployeeControllerTest {
     void rejectsUnknownLevel() {
         assertThat(mvc.get().uri("/api/employees?level=L9")).hasStatus(400)
                 .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+    }
+
+    private static final EmployeeDetail AKIRA_DETAIL = new EmployeeDetail(AKIRA, 3,
+            Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-16T10:00:00Z"));
+
+    private static final String VALID_CREATE = """
+            {"firstName": "Akira", "lastName": "Ito", "email": "akira@acme.example", "countryCode": "JP",
+             "departmentId": 1, "jobTitle": "Software Engineer", "level": "L2", "hireDate": "2026-11-01",
+             "salaryAmount": "9000000"}""";
+
+    @Test
+    void getsDetailAsFlatJsonWithVersion() {
+        when(queries.findDetail(7)).thenReturn(Optional.of(AKIRA_DETAIL));
+
+        var json = assertThat(mvc.get().uri("/api/employees/7")).hasStatusOk().bodyJson();
+        json.extractingPath("$.employeeCode").isEqualTo("E00007");
+        json.extractingPath("$.version").isEqualTo(3);
+        json.extractingPath("$.updatedAt").isEqualTo("2026-10-16T10:00:00Z");
+    }
+
+    @Test
+    void unknownEmployeeIs404() {
+        when(queries.findDetail(anyLong())).thenReturn(Optional.empty());
+
+        assertThat(mvc.get().uri("/api/employees/999")).hasStatus(404)
+                .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+    }
+
+    @Test
+    void createReturns201WithLocation() {
+        when(service.create(any())).thenReturn(7L);
+        when(queries.findDetail(7)).thenReturn(Optional.of(AKIRA_DETAIL));
+
+        assertThat(mvc.post().uri("/api/employees").contentType(MediaType.APPLICATION_JSON).content(VALID_CREATE))
+                .hasStatus(201)
+                .hasHeader("Location", "/api/employees/7");
+
+        ArgumentCaptor<CreateEmployee> captor = ArgumentCaptor.forClass(CreateEmployee.class);
+        verify(service).create(captor.capture());
+        assertThat(captor.getValue().salaryAmount()).isEqualByComparingTo(new BigDecimal("9000000"));
+        assertThat(captor.getValue().hireDate()).isEqualTo(LocalDate.of(2026, 11, 1));
+    }
+
+    @Test
+    void createReportsEveryInvalidField() {
+        String invalid = """
+                {"firstName": " ", "lastName": "Ito", "email": "not-an-email", "countryCode": "japan",
+                 "departmentId": 1, "jobTitle": "Engineer", "level": "L2", "hireDate": "2026-11-01",
+                 "salaryAmount": "-5"}""";
+
+        var json = assertThat(mvc.post().uri("/api/employees").contentType(MediaType.APPLICATION_JSON).content(invalid))
+                .hasStatus(400).bodyJson();
+        json.extractingPath("$.title").isEqualTo("Validation failed");
+        json.extractingPath("$.errors").asMap().containsOnlyKeys("firstName", "email", "countryCode", "salaryAmount");
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void staleUpdateIs409() {
+        doThrow(new ConflictException("Employee 7 was changed by someone else. Reload and try again."))
+                .when(service).updateProfile(eq(7L), any());
+        String update = """
+                {"firstName": "Akira", "lastName": "Ito", "email": "akira@acme.example", "departmentId": 1,
+                 "jobTitle": "Staff Engineer", "level": "L4", "version": 2}""";
+
+        assertThat(mvc.put().uri("/api/employees/7").contentType(MediaType.APPLICATION_JSON).content(update))
+                .hasStatus(409)
+                .bodyJson().extractingPath("$.detail").asString().contains("Reload");
+    }
+
+    @Test
+    void changesStatusWithExpectedVersion() {
+        when(queries.findDetail(7)).thenReturn(Optional.of(AKIRA_DETAIL));
+
+        assertThat(mvc.patch().uri("/api/employees/7/status").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\": \"INACTIVE\", \"version\": 3}")).hasStatusOk();
+
+        verify(service).changeStatus(7L, EmployeeStatus.INACTIVE, 3L);
+    }
+
+    @Test
+    void statusChangeRequiresVersion() {
+        assertThat(mvc.patch().uri("/api/employees/7/status").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\": \"INACTIVE\"}")).hasStatus(400);
+        verifyNoInteractions(service);
     }
 }
