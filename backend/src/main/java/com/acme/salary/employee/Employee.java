@@ -1,0 +1,134 @@
+package com.acme.salary.employee;
+
+import com.acme.salary.common.Money;
+import com.acme.salary.reference.Country;
+import com.acme.salary.reference.Department;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import java.time.Instant;
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "employee")
+public class Employee {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String employeeCode;
+    private String firstName;
+    private String lastName;
+    private String email;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "country_code")
+    private Country country;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "department_id")
+    private Department department;
+
+    private String jobTitle;
+
+    @Enumerated(EnumType.STRING)
+    private JobLevel level;
+
+    private LocalDate hireDate;
+
+    @Enumerated(EnumType.STRING)
+    private EmployeeStatus status;
+
+    private long currentSalaryMinor;
+    private String currentSalaryCurrency;
+
+    private Instant createdAt;
+    private Instant updatedAt;
+
+    protected Employee() {
+    }
+
+    public Employee(String employeeCode, String firstName, String lastName, String email, Country country,
+                    Department department, String jobTitle, JobLevel level, LocalDate hireDate,
+                    Money currentSalary, Instant now) {
+        this.employeeCode = employeeCode;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.country = country;
+        this.department = department;
+        this.jobTitle = jobTitle;
+        this.level = level;
+        this.hireDate = hireDate;
+        this.status = EmployeeStatus.ACTIVE;
+        this.currentSalaryMinor = currentSalary.minorUnits();
+        this.currentSalaryCurrency = currentSalary.currencyCode();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    public Money getCurrentSalary() {
+        return Money.ofMinor(currentSalaryMinor, currentSalaryCurrency);
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getEmployeeCode() {
+        return employeeCode;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public Country getCountry() {
+        return country;
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public String getJobTitle() {
+        return jobTitle;
+    }
+
+    public JobLevel getLevel() {
+        return level;
+    }
+
+    public LocalDate getHireDate() {
+        return hireDate;
+    }
+
+    public EmployeeStatus getStatus() {
+        return status;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+}
