@@ -9,6 +9,7 @@ import com.acme.salary.reference.ReferenceConfig;
 import com.acme.salary.salary.SalaryChangeReason;
 import com.acme.salary.salary.SalaryRecord;
 import com.acme.salary.salary.SalaryRecordRepository;
+import com.acme.salary.salary.SalaryService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({EmployeeService.class, ReferenceConfig.class, EmployeeServiceTest.FixedClock.class})
+@Import({EmployeeService.class, SalaryService.class, ReferenceConfig.class, EmployeeServiceTest.FixedClock.class})
 class EmployeeServiceTest {
 
     static final Instant NOW = Instant.parse("2026-10-16T10:00:00Z");

@@ -1,5 +1,6 @@
 package com.acme.salary.employee;
 
+import com.acme.salary.common.ConflictException;
 import com.acme.salary.common.Money;
 import com.acme.salary.reference.Country;
 import com.acme.salary.reference.Department;
@@ -97,6 +98,41 @@ public class Employee {
     public void changeStatus(EmployeeStatus newStatus, Instant now) {
         this.status = newStatus;
         this.updatedAt = now;
+    }
+
+    /**
+     * Sets the salary currently in effect (local + USD). Called when a change takes effect,
+     * either immediately or later via the rollover job.
+     */
+    public void applySalary(Money salary, Money salaryUsd, Instant now) {
+        requireSalaryInCountryCurrency(salary, country);
+        this.currentSalaryMinor = salary.minorUnits();
+        this.currentSalaryCurrency = salary.currencyCode();
+        this.currentSalaryUsdMinor = salaryUsd.minorUnits();
+        this.updatedAt = now;
+    }
+
+    /**
+     * Records that the employee changed through a related record (e.g. a scheduled salary change).
+     * Returns false if the timestamp was already {@code now}, i.e. nothing on this row changed.
+     */
+    public boolean touch(Instant now) {
+        if (now.equals(updatedAt)) {
+            return false;
+        }
+        this.updatedAt = now;
+        return true;
+    }
+
+    /** Rejects writes based on a stale copy of this employee. */
+    public void assertVersion(long expectedVersion) {
+        if (version != expectedVersion) {
+            throw new ConflictException("Employee " + id + " was changed by someone else. Reload and try again.");
+        }
+    }
+
+    public boolean isActive() {
+        return status == EmployeeStatus.ACTIVE;
     }
 
     private static void requireSalaryInCountryCurrency(Money salary, Country country) {

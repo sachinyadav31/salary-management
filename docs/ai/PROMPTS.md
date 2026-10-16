@@ -54,3 +54,19 @@ For each phase: plan → review the plan → implement test-first → run tests 
   writes through the service and reads the response back from the query side (CQRS-lite).
 - Verified end to end on the 10k dataset: 201 + Location, stale save → 409, duplicate email → 409,
   JPY with decimals → 400, deactivate bumps version.
+
+### Phase 8 — Salary changes with effective-dated history
+- Design choice: allow future-dated changes (real HR: "effective 1 April") while keeping the denormalised current
+  salary. A `SalaryRolloverJob` (startup + daily) re-syncs employees whose latest effective record changed.
+  Idempotent and self-healing. "Denormalisation is a cache; the rollover job is its invalidation."
+- Rules live in a pure `SalaryHistory` class (13 unit tests): no dates before hire, max 1 year ahead, HIRE only at
+  creation, same-date entries must be CORRECTIONs with a note, latest-recorded wins on ties.
+- Removed a package cycle (employee ↔ salary): `EmployeeService` now publishes `EmployeeHired`; `SalaryService`
+  writes the HIRE record in a synchronous listener, i.e. the same transaction (deliberately not
+  `@TransactionalEventListener`, which runs after commit and could leave an employee without salary history).
+- Bugs caught by tests:
+  1. A scheduled change didn't bump the version: I relied on dirty-checking `updatedAt`, which is a no-op when two
+     writes share a timestamp. Fixed by using `OPTIMISTIC_FORCE_INCREMENT`.
+  2. Hibernate applies that at commit, so a rollback-only `@DataJpaTest` can't observe it. Added a committing test,
+     which then revealed a *double* increment when the salary also changed. Fixed by forcing only when the row isn't
+     already dirty. The contract is now "one salary change = exactly one version bump", pinned by a test.

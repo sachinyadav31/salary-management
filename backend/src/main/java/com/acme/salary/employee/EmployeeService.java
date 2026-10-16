@@ -10,9 +10,7 @@ import com.acme.salary.reference.CountryRepository;
 import com.acme.salary.reference.CurrencyConverter;
 import com.acme.salary.reference.Department;
 import com.acme.salary.reference.DepartmentRepository;
-import com.acme.salary.salary.SalaryChangeReason;
-import com.acme.salary.salary.SalaryRecord;
-import com.acme.salary.salary.SalaryRecordRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,21 +26,24 @@ public class EmployeeService {
     private final EmployeeRepository employees;
     private final CountryRepository countries;
     private final DepartmentRepository departments;
-    private final SalaryRecordRepository salaryRecords;
     private final CurrencyConverter converter;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public EmployeeService(EmployeeRepository employees, CountryRepository countries, DepartmentRepository departments,
-                           SalaryRecordRepository salaryRecords, CurrencyConverter converter, Clock clock) {
+                           CurrencyConverter converter, ApplicationEventPublisher events, Clock clock) {
         this.employees = employees;
         this.countries = countries;
         this.departments = departments;
-        this.salaryRecords = salaryRecords;
         this.converter = converter;
+        this.events = events;
         this.clock = clock;
     }
 
-    /** Creates the employee and their first salary record (reason HIRE) atomically. Returns the new id. */
+    /**
+     * Creates the employee. The HIRE salary record is written by the salary feature in response to
+     * {@link EmployeeHired}, inside this same transaction. Returns the new id.
+     */
     public long create(CreateEmployee cmd) {
         Country country = countries.findById(cmd.countryCode())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown country: " + cmd.countryCode()));
@@ -57,7 +58,7 @@ public class EmployeeService {
         Employee employee = employees.save(new Employee(nextEmployeeCode(), cmd.firstName().trim(),
                 cmd.lastName().trim(), email, country, department, cmd.jobTitle().trim(), cmd.level(),
                 cmd.hireDate(), salary, converter.toUsd(salary), now));
-        salaryRecords.save(new SalaryRecord(employee, salary, cmd.hireDate(), SalaryChangeReason.HIRE, null, now));
+        events.publishEvent(new EmployeeHired(employee, salary, now));
         return employee.getId();
     }
 
@@ -82,9 +83,7 @@ public class EmployeeService {
     private Employee findForUpdate(long id, long expectedVersion) {
         Employee employee = employees.findById(id)
                 .orElseThrow(() -> new NotFoundException("Employee " + id + " not found"));
-        if (employee.getVersion() != expectedVersion) {
-            throw new ConflictException("Employee " + id + " was changed by someone else. Reload and try again.");
-        }
+        employee.assertVersion(expectedVersion);
         return employee;
     }
 
