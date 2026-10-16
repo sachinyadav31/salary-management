@@ -28,3 +28,11 @@ For each phase: plan → review the plan → implement test-first → run tests 
 - Salary history is generated *backwards* from the current salary so the latest record always equals the
   denormalised `current_salary_minor` (verified by a SQL test).
 - Measured: 10,000 employees + 18,882 salary records seeded in ~230 ms on SQLite.
+
+### Requirements v0.2 — product direction
+- Asked the assistant for a UI that stands out and a backend with strong design, while respecting the brief's
+  "not the most complex system, but good engineering judgment".
+- Rejected: generating the UI in Lovable (React + Supabase conflicts with the Angular/Java constraint) and adding
+  Kafka/Redis/microservices (no load or team to justify them).
+- Accepted: features grounded in HR practice (pay bands, compa-ratio, outlier detection) and a polished Angular UI.
+  Requirements were updated *before* any code, so the docs lead the implementation.
