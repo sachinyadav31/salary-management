@@ -70,3 +70,15 @@ For each phase: plan → review the plan → implement test-first → run tests 
   2. Hibernate applies that at commit, so a rollback-only `@DataJpaTest` can't observe it. Added a committing test,
      which then revealed a *double* increment when the salary also changed. Fixed by forcing only when the row isn't
      already dirty. The contract is now "one salary change = exactly one version bump", pinned by a test.
+
+### Phase 9 — Pay bands and compa-ratio
+- Bands per country × level (V5 migration): midpoint from the same model as the seed data, min/max = ±20%.
+  A test asserts the migration and the seed model agree for all 48 bands (guarding the duplication).
+- Compa-ratio and band position are defined **once**, in the SQL view `employee_pay`, using integer basis points with
+  half-up rounding. Search, filters, sort and insights all read it, so the definitions can't drift. A boundary test
+  proves 0.969950 → 0.97.
+- New filters `bandPosition`, `compaMin`, `compaMax`, and sort `compaRatio`. `GET /api/pay-bands` adds active
+  headcount split below/within/above for a band heatmap.
+- Seeded workforce: 87% within band, 5.2% below, 7.8% above. Realistic outliers for the dashboard.
+- Cleanup during review: a scripted edit left a mis-indented row mapper with fully qualified `java.sql` types;
+  tidied before commit.

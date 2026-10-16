@@ -2,6 +2,9 @@ package com.acme.salary.employee.query;
 
 import com.acme.salary.employee.EmployeeStatus;
 import com.acme.salary.employee.JobLevel;
+import com.acme.salary.payband.BandPosition;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 
@@ -13,6 +16,9 @@ public record EmployeeSearchCriteria(
         String jobTitle,
         List<JobLevel> levels,
         EmployeeStatus status,
+        BandPosition bandPosition,
+        BigDecimal compaMin,
+        BigDecimal compaMax,
         int page,
         int size,
         EmployeeSortField.Sort sort) {
@@ -31,6 +37,9 @@ public record EmployeeSearchCriteria(
         if (size < 1 || size > MAX_SIZE) {
             throw new IllegalArgumentException("size must be between 1 and " + MAX_SIZE);
         }
+        if (compaMin != null && compaMax != null && compaMin.compareTo(compaMax) > 0) {
+            throw new IllegalArgumentException("compaMin must not be greater than compaMax");
+        }
     }
 
     public static Builder builder() {
@@ -44,6 +53,9 @@ public record EmployeeSearchCriteria(
         private String jobTitle;
         private List<JobLevel> levels;
         private EmployeeStatus status;
+        private BandPosition bandPosition;
+        private BigDecimal compaMin;
+        private BigDecimal compaMax;
         private int page;
         private int size = DEFAULT_SIZE;
         private EmployeeSortField.Sort sort;
@@ -54,6 +66,9 @@ public record EmployeeSearchCriteria(
         public Builder jobTitle(String jobTitle) { this.jobTitle = jobTitle; return this; }
         public Builder levels(List<JobLevel> levels) { this.levels = levels; return this; }
         public Builder status(EmployeeStatus status) { this.status = status; return this; }
+        public Builder bandPosition(BandPosition bandPosition) { this.bandPosition = bandPosition; return this; }
+        public Builder compaMin(BigDecimal compaMin) { this.compaMin = compaMin; return this; }
+        public Builder compaMax(BigDecimal compaMax) { this.compaMax = compaMax; return this; }
         public Builder page(int page) { this.page = page; return this; }
         public Builder size(int size) { this.size = size; return this; }
         public Builder sort(EmployeeSortField.Sort sort) { this.sort = sort; return this; }
@@ -62,7 +77,8 @@ public record EmployeeSearchCriteria(
         }
 
         public EmployeeSearchCriteria build() {
-            return new EmployeeSearchCriteria(search, countries, departmentIds, jobTitle, levels, status, page, size, sort);
+            return new EmployeeSearchCriteria(search, countries, departmentIds, jobTitle, levels, status, bandPosition,
+                    compaMin, compaMax, page, size, sort);
         }
     }
 }

@@ -23,3 +23,11 @@ MacBook (Apple Silicon), SQLite file DB, 10,000 employees, warm JVM, `curl` tota
 | `?country=IN&level=L3&status=ACTIVE` | 703 | 6 ms |
 | `?sort=salaryUsd,desc&size=100` | 10,000 | 8 ms |
 | `?page=399` (last page, offset 9,975) | 10,000 | 9 ms |
+| `?sort=compaRatio,asc` (computed via `employee_pay` view, no index) | 10,000 | 35 ms |
+| `?compaMax=0.85&sort=compaRatio` | — | 19 ms |
+| `?bandPosition=BELOW&country=IN&level=L3` | — | 8 ms |
+| `GET /api/pay-bands` (48 bands + headcount split) | 10,000 | 32 ms |
+
+**Compa-ratio trade-off:** it is computed in a view, so sorting by it scans and sorts all 10k rows (~35 ms).
+That's well within budget. At 100k+ rows it would be stored like `current_salary_usd_minor` and kept in sync on
+salary writes and band changes.

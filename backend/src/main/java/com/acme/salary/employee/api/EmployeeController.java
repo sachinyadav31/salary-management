@@ -13,6 +13,7 @@ import com.acme.salary.employee.query.EmployeeQueryRepository;
 import com.acme.salary.employee.query.EmployeeSearchCriteria;
 import com.acme.salary.employee.query.EmployeeSortField;
 import com.acme.salary.employee.query.EmployeeSummary;
+import com.acme.salary.payband.BandPosition;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 
@@ -43,7 +45,7 @@ public class EmployeeController {
     /**
      * Paged directory. Repeat a parameter to filter by several values, e.g. {@code ?country=IN&country=JP}.
      * Sort is {@code field[,asc|desc]} with field one of name, employeeCode, country, department, jobTitle,
-     * level, hireDate, salaryUsd.
+     * level, hireDate, salaryUsd, compaRatio. {@code compaMax=0.85} finds people paid 15%+ below band midpoint.
      */
     @GetMapping
     public PageResponse<EmployeeSummary> search(
@@ -53,6 +55,9 @@ public class EmployeeController {
             @RequestParam(name = "title", required = false) String jobTitle,
             @RequestParam(name = "level", required = false) List<JobLevel> levels,
             @RequestParam(required = false) EmployeeStatus status,
+            @RequestParam(required = false) BandPosition bandPosition,
+            @RequestParam(required = false) BigDecimal compaMin,
+            @RequestParam(required = false) BigDecimal compaMax,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "" + EmployeeSearchCriteria.DEFAULT_SIZE) int size,
             @RequestParam(required = false) String sort) {
@@ -63,6 +68,9 @@ public class EmployeeController {
                 .jobTitle(jobTitle)
                 .levels(levels)
                 .status(status)
+                .bandPosition(bandPosition)
+                .compaMin(compaMin)
+                .compaMax(compaMax)
                 .page(page)
                 .size(size)
                 .sort(EmployeeSortField.parse(sort))

@@ -3,6 +3,9 @@ package com.acme.salary.employee.query;
 import com.acme.salary.common.web.PageResponse;
 import com.acme.salary.employee.EmployeeStatus;
 import com.acme.salary.employee.JobLevel;
+import com.acme.salary.payband.BandPosition;
+
+import java.math.BigDecimal;
 import com.acme.salary.reference.ReferenceConfig;
 import com.acme.salary.seed.DatabaseSeeder;
 import com.acme.salary.seed.EmployeeSeedGenerator;
@@ -132,5 +135,46 @@ class EmployeeQueryRepositoryTest {
 
     private long count(String where) {
         return jdbc.queryForObject("select count(*) from employee where " + where, Long.class);
+    }
+
+    @Test
+    void everyEmployeeCarriesBandAndCompaRatio() {
+        var page = queries.search(EmployeeSearchCriteria.builder().size(100).build());
+
+        assertThat(page.content()).allSatisfy(e -> {
+            assertThat(e.payBand()).isNotNull();
+            assertThat(e.payBand().mid().currency()).isEqualTo(e.salary().currency());
+            assertThat(e.compaRatio()).isPositive();
+            assertThat(e.bandPosition()).isNotNull();
+        });
+    }
+
+    @Test
+    void filtersByBandPosition() {
+        var below = queries.search(EmployeeSearchCriteria.builder().bandPosition(BandPosition.BELOW).size(100).build());
+
+        assertThat(below.totalElements())
+                .isEqualTo(jdbc.queryForObject("select count(*) from employee_pay where band_position = 'BELOW'", Long.class))
+                .isPositive();
+        assertThat(below.content()).allSatisfy(e -> assertThat(e.salary().minorUnits())
+                .isLessThan(e.payBand().min().minorUnits()));
+    }
+
+    @Test
+    void filtersByCompaRatioRangeInclusive() {
+        var page = queries.search(EmployeeSearchCriteria.builder()
+                .compaMin(new BigDecimal("0.90")).compaMax(new BigDecimal("1.00")).size(100).build());
+
+        assertThat(page.content()).isNotEmpty().allSatisfy(e ->
+                assertThat(e.compaRatio()).isBetween(new BigDecimal("0.90"), new BigDecimal("1.00")));
+    }
+
+    @Test
+    void sortsByCompaRatioToSurfaceTheMostUnderpaidFirst() {
+        var page = queries.search(EmployeeSearchCriteria.builder()
+                .sort(EmployeeSortField.COMPA_RATIO, false).size(100).build());
+
+        assertThat(page.content()).extracting(EmployeeSummary::compaRatio).isSorted();
+        assertThat(page.content().getFirst().bandPosition()).isEqualTo(BandPosition.BELOW);
     }
 }

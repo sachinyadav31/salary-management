@@ -13,6 +13,8 @@ import com.acme.salary.employee.query.EmployeeQueryRepository;
 import com.acme.salary.employee.query.EmployeeSearchCriteria;
 import com.acme.salary.employee.query.EmployeeSortField;
 import com.acme.salary.employee.query.EmployeeSummary;
+import com.acme.salary.payband.BandPosition;
+import com.acme.salary.payband.PayBandView;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,14 +48,18 @@ class EmployeeControllerTest {
     private static final EmployeeSummary AKIRA = new EmployeeSummary(7, "E00007", "Akira", "Ito", "Akira Ito",
             "akira.ito.7@acme.example", "JP", "Japan", 1, "Engineering", "Software Engineer", JobLevel.L2,
             EmployeeStatus.ACTIVE, LocalDate.of(2021, 4, 1),
-            MoneyView.from(Money.ofMinor(9_000_000, "JPY")), MoneyView.from(Money.ofMinor(6_030_000, "USD")));
+            MoneyView.from(Money.ofMinor(9_000_000, "JPY")), MoneyView.from(Money.ofMinor(6_030_000, "USD")),
+            new PayBandView(MoneyView.from(Money.ofMinor(4_680_000, "JPY")), MoneyView.from(Money.ofMinor(5_850_000, "JPY")),
+                    MoneyView.from(Money.ofMinor(7_020_000, "JPY"))),
+            new BigDecimal("1.54"), BandPosition.ABOVE);
 
     @Test
     void bindsQueryParametersIntoSearchCriteria() {
         when(queries.search(any())).thenReturn(PageResponse.of(List.of(), 1, 50, 0));
 
         assertThat(mvc.get().uri("/api/employees?search=ito&country=JP&country=IN&department=1&title=Software Engineer"
-                + "&level=L2&level=L3&status=ACTIVE&page=1&size=50&sort=salaryUsd,desc")).hasStatusOk();
+                + "&level=L2&level=L3&status=ACTIVE&bandPosition=BELOW&compaMin=0.5&compaMax=0.85"
+                + "&page=1&size=50&sort=salaryUsd,desc")).hasStatusOk();
 
         ArgumentCaptor<EmployeeSearchCriteria> captor = ArgumentCaptor.forClass(EmployeeSearchCriteria.class);
         verify(queries).search(captor.capture());
@@ -64,6 +70,9 @@ class EmployeeControllerTest {
         assertThat(c.jobTitle()).isEqualTo("Software Engineer");
         assertThat(c.levels()).containsExactly(JobLevel.L2, JobLevel.L3);
         assertThat(c.status()).isEqualTo(EmployeeStatus.ACTIVE);
+        assertThat(c.bandPosition()).isEqualTo(BandPosition.BELOW);
+        assertThat(c.compaMin()).isEqualByComparingTo("0.5");
+        assertThat(c.compaMax()).isEqualByComparingTo("0.85");
         assertThat(c.page()).isEqualTo(1);
         assertThat(c.size()).isEqualTo(50);
         assertThat(c.sort()).isEqualTo(new EmployeeSortField.Sort(EmployeeSortField.SALARY_USD, true));
@@ -80,6 +89,9 @@ class EmployeeControllerTest {
         json.extractingPath("$.content[0].salary.minorUnits").isEqualTo(9_000_000);
         json.extractingPath("$.content[0].salary.amount").isEqualTo("9000000");
         json.extractingPath("$.content[0].salaryUsd.amount").isEqualTo("60300.00");
+        json.extractingPath("$.content[0].payBand.mid.amount").isEqualTo("5850000");
+        json.extractingPath("$.content[0].compaRatio").isEqualTo(1.54);
+        json.extractingPath("$.content[0].bandPosition").isEqualTo("ABOVE");
     }
 
     @Test
@@ -94,6 +106,12 @@ class EmployeeControllerTest {
     void rejectsUnknownSortField() {
         assertThat(mvc.get().uri("/api/employees?sort=password")).hasStatus(400)
                 .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+    }
+
+    @Test
+    void rejectsInvertedCompaRange() {
+        assertThat(mvc.get().uri("/api/employees?compaMin=1.2&compaMax=0.8")).hasStatus(400)
+                .bodyJson().extractingPath("$.detail").asString().contains("compaMin");
     }
 
     @Test

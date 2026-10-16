@@ -15,7 +15,8 @@ public enum EmployeeSortField {
     JOB_TITLE("jobTitle", "e.job_title %s"),
     LEVEL("level", "e.level %s"),
     HIRE_DATE("hireDate", "e.hire_date %s"),
-    SALARY_USD("salaryUsd", "e.current_salary_usd_minor %s");
+    SALARY_USD("salaryUsd", "e.current_salary_usd_minor %s"),
+    COMPA_RATIO("compaRatio", "p.compa_ratio_bp %s");
 
     public record Sort(EmployeeSortField field, boolean descending) {
         public static final Sort DEFAULT = new Sort(NAME, false);
