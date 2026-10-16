@@ -4,7 +4,7 @@ Salary management app for an HR Manager (~10k employees, multiple countries).
 Requirements: `docs/REQUIREMENTS.md`. Design notes: `docs/`.
 
 ## Stack
-- Backend: Java 21, Spring Boot 3, Spring Data JPA, Flyway, SQLite (Hibernate community dialect), Gradle (`backend/`).
+- Backend: Java 21, Spring Boot 4, Spring Data JPA, Flyway, SQLite (Hibernate community dialect), Gradle (`backend/`).
 - Frontend: Angular (standalone components) + Angular Material (`frontend/`).
 - Deploy: single Docker image (Spring Boot serves the Angular build) on Render.
 
@@ -21,7 +21,7 @@ Requirements: `docs/REQUIREMENTS.md`. Design notes: `docs/`.
 ## Test rules
 - Test-first for domain logic. Tests must be fast (no network, no sleeps) and deterministic
   (inject `Clock`, fixed random seed).
-- Run `./gradlew test` (backend) and `npm test` (frontend) before every commit.
+- Run `./gradlew test` (backend, JDK 21) and `npm test` (frontend, Vitest + jsdom) before every commit.
 
 ## Commit rules
 - Small, incremental, conventional commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`).

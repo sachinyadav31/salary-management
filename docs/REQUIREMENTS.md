@@ -41,4 +41,4 @@ Replace ACME's Excel-based salary tracking with a web app where the **HR Manager
 - **Quality**: fast, deterministic unit tests for domain rules (salary-change validation, current-salary resolution, currency conversion, statistics), plus API tests for the main endpoints. Incremental commits.
 
 ## Tech choices
-Java 21 · Spring Boot 3 · Spring Data JPA · **SQLite** · Flyway migrations · Angular 17+ with Angular Material · Docker on Render.
+Java 21 · Spring Boot 4 · Spring Data JPA · **SQLite** · Flyway migrations · Angular 20 with Angular Material · Docker on Render.
