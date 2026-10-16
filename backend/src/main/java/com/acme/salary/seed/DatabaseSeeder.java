@@ -1,5 +1,6 @@
 package com.acme.salary.seed;
 
+import com.acme.salary.reference.CurrencyConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -23,10 +24,12 @@ public class DatabaseSeeder {
 
     private final JdbcTemplate jdbc;
     private final Clock clock;
+    private final CurrencyConverter converter;
 
-    public DatabaseSeeder(JdbcTemplate jdbc, Clock clock) {
+    public DatabaseSeeder(JdbcTemplate jdbc, Clock clock, CurrencyConverter converter) {
         this.jdbc = jdbc;
         this.clock = clock;
+        this.converter = converter;
     }
 
     @Transactional
@@ -47,7 +50,7 @@ public class DatabaseSeeder {
             employeeRows.add(new Object[]{id, e.employeeCode(), e.firstName(), e.lastName(), e.email(),
                     e.countryCode(), departmentIds.get(e.departmentName()), e.jobTitle(), e.level().name(),
                     e.hireDate().toString(), e.status().name(), e.currentSalary().minorUnits(),
-                    e.currentSalary().currencyCode(), now, now});
+                    e.currentSalary().currencyCode(), converter.toUsd(e.currentSalary()).minorUnits(), now, now});
             for (SeedSalaryRecord r : e.salaryHistory()) {
                 salaryRows.add(new Object[]{id, r.amount().minorUnits(), r.amount().currencyCode(),
                         r.effectiveDate().toString(), r.reason().name(), now});
@@ -58,8 +61,8 @@ public class DatabaseSeeder {
         jdbc.batchUpdate("""
                 insert into employee (id, employee_code, first_name, last_name, email, country_code, department_id,
                     job_title, level, hire_date, status, current_salary_minor, current_salary_currency,
-                    created_at, updated_at)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", employeeRows);
+                    current_salary_usd_minor, created_at, updated_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", employeeRows);
         jdbc.batchUpdate("""
                 insert into salary_record (employee_id, amount_minor, currency_code, effective_date, reason, created_at)
                 values (?, ?, ?, ?, ?, ?)""", salaryRows);

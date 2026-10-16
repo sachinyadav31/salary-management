@@ -36,3 +36,11 @@ For each phase: plan → review the plan → implement test-first → run tests 
   Kafka/Redis/microservices (no load or team to justify them).
 - Accepted: features grounded in HR practice (pay bands, compa-ratio, outlier detection) and a polished Angular UI.
   Requirements were updated *before* any code, so the docs lead the implementation.
+
+### Phase 6 — Employee search API
+- Design discussed before coding: CQRS-lite (JPA for writes, SQL read model for lists/aggregates), whitelisted
+  sort fields, escaped LIKE wildcards, RFC 7807 errors.
+- Spotted during design: sorting "by salary" across currencies is meaningless in local money. Added
+  `current_salary_usd_minor` (new migration V3, not an edit to V1, since applied migrations are immutable).
+- A test I wrote asked for `size=200` and failed. The cap of 100 was working as intended, so the test was fixed, not the code.
+- Measured 6–11 ms per query on 10k rows (see `PERFORMANCE.md`).

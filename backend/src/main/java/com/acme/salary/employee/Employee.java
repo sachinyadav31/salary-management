@@ -50,6 +50,7 @@ public class Employee {
 
     private long currentSalaryMinor;
     private String currentSalaryCurrency;
+    private long currentSalaryUsdMinor;
 
     private Instant createdAt;
     private Instant updatedAt;
@@ -59,7 +60,7 @@ public class Employee {
 
     public Employee(String employeeCode, String firstName, String lastName, String email, Country country,
                     Department department, String jobTitle, JobLevel level, LocalDate hireDate,
-                    Money currentSalary, Instant now) {
+                    Money currentSalary, Money currentSalaryUsd, Instant now) {
         this.employeeCode = employeeCode;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -72,12 +73,17 @@ public class Employee {
         this.status = EmployeeStatus.ACTIVE;
         this.currentSalaryMinor = currentSalary.minorUnits();
         this.currentSalaryCurrency = currentSalary.currencyCode();
+        this.currentSalaryUsdMinor = currentSalaryUsd.minorUnits();
         this.createdAt = now;
         this.updatedAt = now;
     }
 
     public Money getCurrentSalary() {
         return Money.ofMinor(currentSalaryMinor, currentSalaryCurrency);
+    }
+
+    public Money getCurrentSalaryUsd() {
+        return Money.ofMinor(currentSalaryUsdMinor, "USD");
     }
 
     public Long getId() {

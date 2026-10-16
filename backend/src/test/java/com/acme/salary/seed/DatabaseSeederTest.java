@@ -1,5 +1,6 @@
 package com.acme.salary.seed;
 
+import com.acme.salary.reference.ReferenceConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -21,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({DatabaseSeeder.class, DatabaseSeederTest.FixedClock.class})
+@Import({DatabaseSeeder.class, ReferenceConfig.class, DatabaseSeederTest.FixedClock.class})
 class DatabaseSeederTest {
 
     @TestConfiguration
@@ -57,6 +58,20 @@ class DatabaseSeederTest {
                     select s.amount_minor from salary_record s where s.employee_id = e.id
                     order by s.effective_date desc, s.id desc limit 1)""", Integer.class);
         assertThat(mismatches).isZero();
+    }
+
+    @Test
+    void storesUsdEquivalentOfCurrentSalary() {
+        seeder.seedIfEmpty(employees);
+
+        // Spot-check one JPY employee: minor units * 0.0067, in cents.
+        var row = jdbc.queryForMap("""
+                select current_salary_minor, current_salary_usd_minor from employee
+                where current_salary_currency = 'JPY' order by id limit 1""");
+        long jpy = ((Number) row.get("current_salary_minor")).longValue();
+        assertThat(((Number) row.get("current_salary_usd_minor")).longValue()).isEqualTo(Math.round(jpy * 0.67));
+        assertThat(jdbc.queryForObject("select count(*) from employee where current_salary_usd_minor <= 0",
+                Integer.class)).isZero();
     }
 
     @Test

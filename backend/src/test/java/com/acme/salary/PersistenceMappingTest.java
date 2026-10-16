@@ -48,7 +48,7 @@ class PersistenceMappingTest {
     void employeeAndSalaryHistoryRoundTrip() {
         Employee saved = employees.saveAndFlush(new Employee("E-TEST-1", "Ada", "Lovelace", "ada@acme.test",
                 countries.getReferenceById("JP"), departments.getReferenceById(1L), "Software Engineer",
-                JobLevel.L3, LocalDate.of(2024, 4, 1), Money.ofMinor(9_000_000, "JPY"), NOW));
+                JobLevel.L3, LocalDate.of(2024, 4, 1), Money.ofMinor(9_000_000, "JPY"), Money.ofMinor(6_030_000, "USD"), NOW));
         salaryRecords.save(new SalaryRecord(saved, Money.ofMinor(8_000_000, "JPY"), LocalDate.of(2024, 4, 1),
                 SalaryChangeReason.HIRE, null, NOW));
         salaryRecords.save(new SalaryRecord(saved, Money.ofMinor(9_000_000, "JPY"), LocalDate.of(2025, 4, 1),
@@ -58,6 +58,7 @@ class PersistenceMappingTest {
 
         Employee loaded = employees.findById(saved.getId()).orElseThrow();
         assertThat(loaded.getCurrentSalary()).isEqualTo(Money.ofMinor(9_000_000, "JPY"));
+        assertThat(loaded.getCurrentSalaryUsd()).isEqualTo(Money.ofMinor(6_030_000, "USD"));
         assertThat(loaded.getHireDate()).isEqualTo(LocalDate.of(2024, 4, 1));
         assertThat(loaded.getCountry().getCurrencyCode()).isEqualTo("JPY");
 
@@ -70,7 +71,7 @@ class PersistenceMappingTest {
     void datesAreStoredAsIsoText() {
         Employee saved = employees.saveAndFlush(new Employee("E-TEST-2", "Alan", "Turing", "alan@acme.test",
                 countries.getReferenceById("GB"), departments.getReferenceById(1L), "Researcher",
-                JobLevel.L5, LocalDate.of(2023, 1, 9), Money.ofMinor(9_500_000, "GBP"), NOW));
+                JobLevel.L5, LocalDate.of(2023, 1, 9), Money.ofMinor(9_500_000, "GBP"), Money.ofMinor(12_065_000, "USD"), NOW));
 
         Object stored = em.createNativeQuery("select hire_date from employee where id = ?1")
                 .setParameter(1, saved.getId())
