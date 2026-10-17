@@ -1,0 +1,132 @@
+<h2 mat-dialog-title>Bulk change</h2>
+<mat-dialog-content>
+  <p class="selection">
+    <strong>{{ data.selection }}</strong>
+    <span class="muted"> · {{ data.total | number }} {{ data.total === 1 ? 'employee' : 'employees' }} in the current view</span>
+  </p>
+
+  <form id="bulk-form" [formGroup]="form" (ngSubmit)="runPreview()" class="grid" novalidate aria-label="Bulk change">
+    <mat-button-toggle-group formControlName="kind" aria-label="Change type" class="kind">
+      <mat-button-toggle value="RAISE">Salary raise</mat-button-toggle>
+      <mat-button-toggle value="BONUS">One-off bonus</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    <div class="row">
+      @if (isRaise()) {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Raise (%)</mat-label>
+          <input matInput formControlName="percent" inputmode="decimal" autocomplete="off" placeholder="4.5" cdkFocusInitial />
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+          <mat-label>Reason</mat-label>
+          <mat-select formControlName="reason">
+            @for (r of reasons; track r) { <mat-option [value]="r">{{ reasonLabel(r) }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      } @else {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+          <mat-label>Bonus type</mat-label>
+          <mat-select formControlName="bonusType">
+            @for (t of bonusTypes; track t) { <mat-option [value]="t">{{ bonusLabel(t) }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+        <mat-button-toggle-group formControlName="bonusMode" aria-label="Bonus amount as" class="mode">
+          <mat-button-toggle value="percent">% of base</mat-button-toggle>
+          <mat-button-toggle value="fixed" [disabled]="!data.currency">Fixed {{ data.currency ?? 'amount' }}</mat-button-toggle>
+        </mat-button-toggle-group>
+        @if (value().bonusMode === 'percent') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>% of base salary</mat-label>
+            <input matInput formControlName="percent" inputmode="decimal" autocomplete="off" placeholder="10" />
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Amount ({{ data.currency }})</mat-label>
+            <input matInput formControlName="amount" inputmode="decimal" autocomplete="off" />
+          </mat-form-field>
+        }
+      }
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>{{ isRaise() ? 'Effective date' : 'Award date' }}</mat-label>
+        <input matInput type="date" formControlName="effectiveDate" [max]="maxDate" />
+      </mat-form-field>
+    </div>
+    @if (!isRaise() && !data.currency) {
+      <p class="muted hint">This view spans several countries, so a bonus is a % of each person's base salary. Filter to one country for a fixed amount.</p>
+    }
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Note{{ !isRaise() && value().bonusType === 'SPOT' ? ' (required for spot bonuses)' : ' (optional)' }}</mat-label>
+      <input matInput formControlName="note" maxlength="500" placeholder="e.g. FY27 merit cycle" />
+    </mat-form-field>
+  </form>
+
+  @if (error(); as message) {
+    <p class="form-error" role="alert">{{ message }}</p>
+  }
+
+  @if (preview(); as p) {
+    <section class="preview" aria-label="Preview" aria-live="polite">
+      <div class="kpis">
+        <div><span class="kpi num">{{ p.result.affected | number }}</span><span class="muted">{{ p.result.affected === 1 ? 'person' : 'people' }} {{ isRaise() ? 'get the raise' : 'get the bonus' }}</span></div>
+        <div>
+          <span class="kpi num">{{ p.result.totalUsd | money: 'compact' }}</span>
+          <span class="muted">{{ isRaise() ? 'added to annual payroll' : 'total cost' }} (USD)</span>
+        </div>
+        @if (p.result.bandMoves; as moves) {
+          <div><span class="kpi num within">{{ moves.intoBand | number }}</span><span class="muted">move into their band</span></div>
+          @if (moves.intoAboveBand) {
+            <div><span class="kpi num above">{{ moves.intoAboveBand | number }}</span><span class="muted">go above their band</span></div>
+          }
+        }
+      </div>
+      <p class="muted totals">
+        Exactly: @for (t of p.result.totalsByCurrency; track t.currency; let last = $last) {<span class="num">{{ t | money: 'exact' }}</span>{{ last ? '' : ' · ' }}}
+        @if (p.result.scheduled) { · scheduled, applied automatically on {{ p.request.effectiveDate }} }
+      </p>
+
+      @if (p.result.skipped.length) {
+        <div class="skipped">
+          <strong>{{ p.result.matched - p.result.affected | number }} skipped</strong>
+          <ul>
+            @for (g of p.result.skipped; track g.reason) {
+              <li><span class="num">{{ g.count | number }}</span> · {{ g.reason }} <span class="muted">({{ g.examples.join(', ') }}{{ g.count > g.examples.length ? ', …' : '' }})</span></li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="table" role="table" aria-label="People affected">
+        @for (row of p.result.rows; track row.employeeId) {
+          <div class="tr" role="row">
+            <span role="cell" class="name">{{ row.name }} <span class="muted">{{ row.employeeCode }}</span></span>
+            @if (row.to; as to) {
+              <span role="cell" class="num">{{ row.from | money }} → <strong>{{ to | money }}</strong></span>
+              <span role="cell" class="num delta">+{{ percentOf(row.from, to) | number: '1.1-1' }}%</span>
+              <span role="cell" [class]="'band ' + (row.bandAfter ?? '').toLowerCase()">{{ bandMove(row) }}</span>
+            } @else if (row.amount; as amount) {
+              <span role="cell" class="num"><strong>{{ amount | money }}</strong></span>
+              <span role="cell" class="num delta">{{ share(amount, row.from) | number: '1.1-1' }}% of base</span>
+              <span role="cell"></span>
+            }
+          </div>
+        }
+        @if (hiddenRows() > 0) {
+          <p class="muted more">…and {{ hiddenRows() | number }} more</p>
+        }
+      </div>
+    </section>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cancel</button>
+  @if (!preview()) {
+    <button mat-flat-button type="submit" form="bulk-form" [disabled]="busy() !== null">{{ busy() === 'preview' ? 'Calculating…' : 'Preview' }}</button>
+  }
+  @if (preview(); as p) {
+    <button mat-flat-button type="button" (click)="apply()" [disabled]="busy() !== null || p.result.affected === 0">
+      {{ busy() === 'apply' ? 'Applying…' : 'Apply to ' + (p.result.affected | number) + (p.result.affected === 1 ? ' person' : ' people') }}
+    </button>
+  }
+</mat-dialog-actions>

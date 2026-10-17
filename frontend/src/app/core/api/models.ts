@@ -235,3 +235,53 @@ export interface CareerEvent {
   /** Who made the change; null for system changes. */
   recordedBy: string | null;
 }
+
+// Bulk changes: a raise or bonus for everyone matching the directory filters.
+
+export type BulkKind = 'RAISE' | 'BONUS';
+
+/** RAISE: percent + reason. BONUS: bonusType + percent (of base) or amount (one currency). */
+export interface BulkChangeRequest {
+  kind: BulkKind;
+  percent: string | null;
+  amount: string | null;
+  effectiveDate: string;
+  reason: SalaryChangeReason | null;
+  bonusType: BonusType | null;
+  note: string | null;
+  requestId?: string;
+}
+
+/** For a raise `to` is the new salary; for a bonus `amount` is set and `from` is the base salary. */
+export interface BulkRow {
+  employeeId: number;
+  employeeCode: string;
+  name: string;
+  from: Money;
+  to: Money | null;
+  amount: Money | null;
+  bandBefore: BandPosition | null;
+  bandAfter: BandPosition | null;
+}
+
+export interface BulkPreview {
+  kind: BulkKind;
+  matched: number;
+  affected: number;
+  scheduled: number;
+  /** Annual payroll increase (raise) or total cost (bonus), at the fixed FX rates. */
+  totalUsd: Money;
+  totalsByCurrency: Money[];
+  bandMoves: { intoBand: number; intoAboveBand: number; stillBelowBand: number } | null;
+  /** At most 200 people; `affected` is the full count. */
+  rows: BulkRow[];
+  skipped: { reason: string; count: number; examples: string[] }[];
+}
+
+export interface BulkResult {
+  requestId: string;
+  kind: BulkKind;
+  applied: number;
+  skipped: number;
+  alreadyApplied: boolean;
+}

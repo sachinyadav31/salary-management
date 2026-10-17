@@ -1,0 +1,80 @@
+:host { display: block; }
+
+.selection { margin: 0 0 14px; }
+.muted { color: var(--pa-muted); }
+.hint { margin: -4px 0 0; font-size: 12.5px; }
+
+.grid { display: grid; gap: 12px; }
+.kind { justify-self: start; }
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+
+  mat-form-field { width: 150px; }
+  .grow { flex: 1 1 180px; width: auto; }
+}
+mat-form-field { width: 100%; }
+.form-error { margin: 12px 0 0; color: var(--pa-below); font-size: 13px; }
+
+.preview {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--pa-border);
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+
+  div { display: grid; gap: 2px; font-size: 12.5px; }
+  .kpi { font-family: var(--pa-font-display); font-size: 26px; line-height: 1.1; color: var(--pa-text); }
+  .within { color: var(--pa-within); }
+  .above { color: var(--pa-above); }
+}
+
+.totals { margin: 10px 0 0; font-size: 12.5px; }
+
+.skipped {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  box-shadow: inset 3px 0 0 var(--pa-watch);
+  background: color-mix(in srgb, var(--pa-watch) 8%, transparent);
+
+  ul { margin: 4px 0 0; padding-left: 18px; }
+}
+
+.table {
+  margin-top: 12px;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--pa-border);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) 70px 70px;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--pa-border);
+
+  &:last-child { border-bottom: 0; }
+  .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .delta { color: var(--pa-within); text-align: right; }
+  .band { font-size: 12px; text-align: right; }
+  .band.within { color: var(--pa-within); }
+  .band.above { color: var(--pa-above); }
+  .band.below { color: var(--pa-below); }
+}
+.more { margin: 0; padding: 6px 10px; font-size: 12.5px; }
+
+@media (max-width: 600px) {
+  .tr { grid-template-columns: minmax(0, 1fr) auto; }
+  .tr .name { grid-column: 1 / -1; }
+  .tr .band { display: none; }
+}

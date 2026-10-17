@@ -175,7 +175,7 @@ describe('EmployeeDrawer', () => {
 
     expect(text()).toContain('£88,000');
     expect(root().querySelector('form')).toBeNull();
-    expect((await changed).version).toBe(4);
+    expect((await changed)?.version).toBe(4);
   });
 
   it('on 409 loads the latest version, shows what changed and keeps the user\'s input', async () => {

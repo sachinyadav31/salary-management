@@ -3,16 +3,16 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { handlesErrors } from './problem-interceptor';
 import {
-  AwardBonusRequest, Bonus, CareerEvent, EmployeeDetail, EmployeeStatus, EmployeeSummary, PageResponse, RecordSalaryChangeRequest, SalaryChangeResponse,
+  AwardBonusRequest, Bonus, BulkChangeRequest, BulkPreview, BulkResult, CareerEvent, EmployeeDetail, EmployeeStatus, EmployeeSummary, PageResponse, RecordSalaryChangeRequest, SalaryChangeResponse,
   SalaryHistoryItem, UpdateEmployeeRequest,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class EmployeeApi {
   private readonly http = inject(HttpClient);
-  private readonly changed = new Subject<EmployeeDetail>();
+  private readonly changed = new Subject<EmployeeDetail | null>();
 
-  /** Emits after any successful write, so lists showing the employee can refresh. */
+  /** Emits after any successful write (null after a bulk change), so lists showing employees can refresh. */
   readonly changed$ = this.changed.asObservable();
 
   search(params: HttpParams): Observable<PageResponse<EmployeeSummary>> {
@@ -60,7 +60,17 @@ export class EmployeeApi {
     return this.http.post<SalaryChangeResponse>(`/api/employees/${id}/salary-changes`, body, { context: handlesErrors() });
   }
 
-  notifyChanged(employee: EmployeeDetail): void {
+  /** Same filters as {@link search}: previews a raise or bonus for everyone matching them. Saves nothing. */
+  bulkPreview(params: HttpParams, body: BulkChangeRequest): Observable<BulkPreview> {
+    return this.http.post<BulkPreview>('/api/bulk-changes/preview', body, { params, context: handlesErrors() });
+  }
+
+  /** Applies in one transaction; the same requestId never applies twice. */
+  bulkApply(params: HttpParams, body: BulkChangeRequest & { requestId: string }): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/bulk-changes', body, { params, context: handlesErrors() });
+  }
+
+  notifyChanged(employee: EmployeeDetail | null): void {
     this.changed.next(employee);
   }
 }

@@ -3,12 +3,14 @@ import { Component, computed, effect, inject } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -22,6 +24,8 @@ import { BandBar } from '../../shared/band-bar';
 import { CompaBadge } from '../../shared/compa-badge';
 import { countryFlag } from '../../shared/flag';
 import { MoneyPipe } from '../../shared/money';
+import { BulkChangeData, BulkChangeDialog } from './bulk/bulk-change-dialog';
+import { describeSelection, selectionCurrency } from './bulk/bulk-change';
 import { DEFAULT_QUERY, DirectoryQuery, PAGE_SIZES, fromQueryParams, hasFilters, toApiParams, toQueryParams } from './directory-query';
 
 interface LoadState {
@@ -54,6 +58,8 @@ export class EmployeesPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly api = inject(EmployeeApi);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
   protected readonly meta = toSignal(inject(MetaApi).meta$);
   protected readonly query = toSignal(this.route.queryParams.pipe(map(fromQueryParams)), { initialValue: DEFAULT_QUERY });
@@ -138,6 +144,29 @@ export class EmployeesPage {
 
   protected clearFilters(): void {
     this.update({ ...DEFAULT_QUERY, sort: this.query().sort, size: this.query().size });
+  }
+
+  /** Raise or bonus for everyone the current filters select (all pages, not just this one). */
+  protected openBulkChange(): void {
+    const query = this.query();
+    const data: BulkChangeData = {
+      params: toApiParams(query, { paged: false }),
+      total: this.total(),
+      selection: describeSelection(query, this.meta()),
+      currency: selectionCurrency(query, this.meta()),
+    };
+    this.dialog
+      .open(BulkChangeDialog, { data, width: '720px', maxWidth: 'calc(100vw - 32px)', autoFocus: 'first-tabbable', restoreFocus: true })
+      .afterClosed()
+      .subscribe((result) => {
+        if (!result) return;
+        const what = result.kind === 'RAISE' ? 'Raise recorded' : 'Bonus awarded';
+        const skipped = result.skipped ? ` · ${result.skipped} skipped` : '';
+        this.snackBar.open(
+          result.alreadyApplied ? 'Already applied, nothing changed' : `${what} for ${result.applied} ${result.applied === 1 ? 'person' : 'people'}${skipped}`,
+          'OK', { duration: 6000 });
+        this.api.notifyChanged(null);
+      });
   }
 
   protected readonly trackById = (_: number, employee: EmployeeSummary) => employee.id;
