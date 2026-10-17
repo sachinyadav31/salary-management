@@ -23,3 +23,6 @@ frontend/.angular/
 
 # Local preview config (machine-specific paths)
 .claude/launch.json
+
+# Angular build is copied here by the Docker build only
+backend/src/main/resources/static/
