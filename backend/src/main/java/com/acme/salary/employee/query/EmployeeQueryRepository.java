@@ -110,9 +110,12 @@ public class EmployeeQueryRepository {
     }
 
     public Optional<EmployeeDetail> findDetail(long id) {
-        return jdbc.query(COLUMNS + FROM + " where e.id = :id", new MapSqlParameterSource("id", id),
+        return jdbc.query(COLUMNS + ", u.full_name as updated_by_name " + FROM
+                        + " left join app_user u on u.id = e.updated_by_user_id where e.id = :id",
+                new MapSqlParameterSource("id", id),
                 (rs, i) -> new EmployeeDetail(ROW_MAPPER.mapRow(rs, i), rs.getLong("version"),
-                        Instant.parse(rs.getString("created_at")), Instant.parse(rs.getString("updated_at"))))
+                        Instant.parse(rs.getString("created_at")), Instant.parse(rs.getString("updated_at")),
+                        rs.getString("updated_by_name")))
                 .stream().findFirst();
     }
 

@@ -248,3 +248,20 @@ For each phase: plan → review the plan → implement test-first → run tests 
   numbers. The user chose light-only, so the theme service, toggle and light/dark pairs were removed (no dead code).
 - Deliberately not used: Incubyte's logo or name inside the product. The brief's client is ACME, so the app stays
   "Pay Atlas", with a small credit line for the assessment.
+
+### Phase 16b — Backend authentication and audit
+- Chose server sessions over JWT for a same-origin SPA: HttpOnly session cookie (unreadable by XSS), real
+  server-side logout, Spring Security 7's built-in `csrf.spa()` (XSRF-TOKEN cookie, echoed as a header).
+  401/403 are problem JSON, never an HTML redirect.
+- Hardening: one generic message for wrong password / unknown email (identical bodies, tested; Spring also hashes a
+  dummy password for unknown users), lockout after 5 failures with `Retry-After`, new session id on sign-in,
+  30-minute idle timeout, Secure cookie behind Render's TLS.
+- Audit: salary records store who recorded them, employees who last edited them; system work (seed, rollover)
+  records nobody. Services get the actor from a small `CurrentUser` component, so domain classes stay framework-free.
+- Tests caught:
+  1. `Retry-After` reported 299 s instead of 300 s (truncation); now rounds up so a client never retries while
+     still locked.
+  2. spring-security-test's `csrf()` helper swaps the shared CSRF repository for one that never writes the cookie,
+     which broke a later test in the cached context. The integration test now uses the real cookie-and-header flow
+     for every write, which is also closer to what the browser does.
+- Single persona per the brief: every signed-in user is an HR admin; a read-only role would be a small addition.

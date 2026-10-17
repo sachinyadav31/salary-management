@@ -18,7 +18,9 @@ import java.util.Optional;
  */
 public final class SalaryHistory {
 
-    public record Entry(long sequence, Money amount, LocalDate effectiveDate, SalaryChangeReason reason, String note) {
+    /** {@code recordedBy} is the user's name, or null for system-generated history. */
+    public record Entry(long sequence, Money amount, LocalDate effectiveDate, SalaryChangeReason reason, String note,
+                        String recordedBy) {
     }
 
     public record NewChange(Money amount, LocalDate effectiveDate, SalaryChangeReason reason, String note) {

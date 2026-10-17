@@ -10,11 +10,14 @@ import com.acme.salary.salary.SalaryHistory.EntryStatus;
 import com.acme.salary.salary.SalaryHistory.TimelineEntry;
 import com.acme.salary.salary.SalaryService;
 import com.acme.salary.salary.SalaryService.RecordChange;
+import com.acme.salary.auth.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
@@ -24,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -31,6 +35,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @WebMvcTest(SalaryController.class)
+@WithMockUser(roles = "HR")
+@Import(SecurityConfig.class)
 class SalaryControllerTest {
 
     @Autowired MockMvcTester mvc;
@@ -39,9 +45,9 @@ class SalaryControllerTest {
 
     private static final List<TimelineEntry> TIMELINE = List.of(
             new TimelineEntry(new Entry(9, Money.ofMinor(8_800_000, "GBP"), LocalDate.of(2026, 10, 16),
-                    SalaryChangeReason.PROMOTION, "Led the payments migration"), EntryStatus.CURRENT, new BigDecimal("10.0")),
+                    SalaryChangeReason.PROMOTION, "Led the payments migration", "Priya Sharma"), EntryStatus.CURRENT, new BigDecimal("10.0")),
             new TimelineEntry(new Entry(4, Money.ofMinor(8_000_000, "GBP"), LocalDate.of(2024, 1, 15),
-                    SalaryChangeReason.HIRE, null), EntryStatus.PAST, null));
+                    SalaryChangeReason.HIRE, null, null), EntryStatus.PAST, null));
 
     @Test
     void returnsTimelineNewestFirst() {
@@ -58,9 +64,9 @@ class SalaryControllerTest {
     @Test
     void recordsChangeAndReturns201WithEmployeeAndHistory() {
         when(salaryService.timeline(7)).thenReturn(TIMELINE);
-        when(employeeQueries.findDetail(7)).thenReturn(Optional.of(new EmployeeDetail(null, 1, null, null)));
+        when(employeeQueries.findDetail(7)).thenReturn(Optional.of(new EmployeeDetail(null, 1, null, null, null)));
 
-        assertThat(mvc.post().uri("/api/employees/7/salary-changes").contentType(MediaType.APPLICATION_JSON).content("""
+        assertThat(mvc.post().with(csrf()).uri("/api/employees/7/salary-changes").contentType(MediaType.APPLICATION_JSON).content("""
                 {"amount": "88000", "effectiveDate": "2026-10-16", "reason": "PROMOTION",
                  "note": "Led the payments migration", "version": 0}"""))
                 .hasStatus(201)
@@ -76,7 +82,7 @@ class SalaryControllerTest {
 
     @Test
     void validatesRequestShape() {
-        var json = assertThat(mvc.post().uri("/api/employees/7/salary-changes").contentType(MediaType.APPLICATION_JSON)
+        var json = assertThat(mvc.post().with(csrf()).uri("/api/employees/7/salary-changes").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"amount\": \"-1\", \"reason\": \"PROMOTION\"}")).hasStatus(400).bodyJson();
         json.extractingPath("$.errors").asMap().containsOnlyKeys("amount", "effectiveDate", "version");
         verifyNoInteractions(salaryService);
@@ -90,9 +96,9 @@ class SalaryControllerTest {
         String body = """
                 {"amount": "88000", "effectiveDate": "2020-01-01", "reason": "PROMOTION", "version": 0}""";
 
-        assertThat(mvc.post().uri("/api/employees/7/salary-changes").contentType(MediaType.APPLICATION_JSON).content(body))
+        assertThat(mvc.post().with(csrf()).uri("/api/employees/7/salary-changes").contentType(MediaType.APPLICATION_JSON).content(body))
                 .hasStatus(400).bodyJson().extractingPath("$.detail").asString().contains("hire date");
-        assertThat(mvc.post().uri("/api/employees/7/salary-changes").contentType(MediaType.APPLICATION_JSON).content(body))
+        assertThat(mvc.post().with(csrf()).uri("/api/employees/7/salary-changes").contentType(MediaType.APPLICATION_JSON).content(body))
                 .hasStatus(409);
     }
 }

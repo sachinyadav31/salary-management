@@ -15,6 +15,7 @@ import com.acme.salary.employee.query.EmployeeSummary;
 import com.acme.salary.payband.BandPosition;
 import com.acme.salary.payband.PayBandView;
 import com.acme.salary.reference.JobLevel;
+import com.acme.salary.auth.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
@@ -37,6 +39,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,7 +50,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @WebMvcTest(EmployeeController.class)
-@Import(EmployeeControllerTest.FixedClock.class)
+@WithMockUser(roles = "HR")
+@Import({SecurityConfig.class, EmployeeControllerTest.FixedClock.class})
 class EmployeeControllerTest {
 
     @TestConfiguration
@@ -138,7 +142,7 @@ class EmployeeControllerTest {
     }
 
     private static final EmployeeDetail AKIRA_DETAIL = new EmployeeDetail(AKIRA, 3,
-            Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-16T10:00:00Z"));
+            Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-16T10:00:00Z"), "Priya Sharma");
 
     private static final String VALID_CREATE = """
             {"firstName": "Akira", "lastName": "Ito", "email": "akira@acme.example", "countryCode": "JP",
@@ -168,7 +172,7 @@ class EmployeeControllerTest {
         when(service.create(any())).thenReturn(7L);
         when(queries.findDetail(7)).thenReturn(Optional.of(AKIRA_DETAIL));
 
-        assertThat(mvc.post().uri("/api/employees").contentType(MediaType.APPLICATION_JSON).content(VALID_CREATE))
+        assertThat(mvc.post().with(csrf()).uri("/api/employees").contentType(MediaType.APPLICATION_JSON).content(VALID_CREATE))
                 .hasStatus(201)
                 .hasHeader("Location", "/api/employees/7");
 
@@ -185,7 +189,7 @@ class EmployeeControllerTest {
                  "departmentId": 1, "jobTitle": "Engineer", "level": "L2", "hireDate": "2026-11-01",
                  "salaryAmount": "-5"}""";
 
-        var json = assertThat(mvc.post().uri("/api/employees").contentType(MediaType.APPLICATION_JSON).content(invalid))
+        var json = assertThat(mvc.post().with(csrf()).uri("/api/employees").contentType(MediaType.APPLICATION_JSON).content(invalid))
                 .hasStatus(400).bodyJson();
         json.extractingPath("$.title").isEqualTo("Validation failed");
         json.extractingPath("$.errors").asMap().containsOnlyKeys("firstName", "email", "countryCode", "salaryAmount");
@@ -200,7 +204,7 @@ class EmployeeControllerTest {
                 {"firstName": "Akira", "lastName": "Ito", "email": "akira@acme.example", "departmentId": 1,
                  "jobTitle": "Staff Engineer", "level": "L4", "version": 2}""";
 
-        assertThat(mvc.put().uri("/api/employees/7").contentType(MediaType.APPLICATION_JSON).content(update))
+        assertThat(mvc.put().with(csrf()).uri("/api/employees/7").contentType(MediaType.APPLICATION_JSON).content(update))
                 .hasStatus(409)
                 .bodyJson().extractingPath("$.detail").asString().contains("Reload");
     }
@@ -209,7 +213,7 @@ class EmployeeControllerTest {
     void changesStatusWithExpectedVersion() {
         when(queries.findDetail(7)).thenReturn(Optional.of(AKIRA_DETAIL));
 
-        assertThat(mvc.patch().uri("/api/employees/7/status").contentType(MediaType.APPLICATION_JSON)
+        assertThat(mvc.patch().with(csrf()).uri("/api/employees/7/status").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\": \"INACTIVE\", \"version\": 3}")).hasStatusOk();
 
         verify(service).changeStatus(7L, EmployeeStatus.INACTIVE, 3L);
@@ -217,7 +221,7 @@ class EmployeeControllerTest {
 
     @Test
     void statusChangeRequiresVersion() {
-        assertThat(mvc.patch().uri("/api/employees/7/status").contentType(MediaType.APPLICATION_JSON)
+        assertThat(mvc.patch().with(csrf()).uri("/api/employees/7/status").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\": \"INACTIVE\"}")).hasStatus(400);
         verifyNoInteractions(service);
     }

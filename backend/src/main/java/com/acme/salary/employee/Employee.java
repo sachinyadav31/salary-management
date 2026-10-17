@@ -1,5 +1,6 @@
 package com.acme.salary.employee;
 
+import com.acme.salary.auth.AppUser;
 import com.acme.salary.common.ConflictException;
 import com.acme.salary.common.Money;
 import com.acme.salary.reference.Country;
@@ -60,6 +61,11 @@ public class Employee {
 
     @Version
     private long version;
+
+    /** Who last edited this employee (null: created by the seed or changed only by system jobs). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by_user_id")
+    private AppUser updatedBy;
 
     protected Employee() {
     }
@@ -129,6 +135,13 @@ public class Employee {
     public void assertVersion(long expectedVersion) {
         if (version != expectedVersion) {
             throw new ConflictException("Employee " + id + " was changed by someone else. Reload and try again.");
+        }
+    }
+
+    /** Records who made a user-initiated change (system jobs leave the last editor unchanged). */
+    public void editedBy(AppUser user) {
+        if (user != null) {
+            this.updatedBy = user;
         }
     }
 

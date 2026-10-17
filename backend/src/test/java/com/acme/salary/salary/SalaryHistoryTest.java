@@ -124,7 +124,7 @@ class SalaryHistoryTest {
     }
 
     private static Entry entry(long sequence, String amount, LocalDate date, SalaryChangeReason reason) {
-        return new Entry(sequence, gbp(amount), date, reason, null);
+        return new Entry(sequence, gbp(amount), date, reason, null, null);
     }
 
     private static Money gbp(String amount) {

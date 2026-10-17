@@ -1,5 +1,6 @@
 package com.acme.salary.employee;
 
+import com.acme.salary.auth.CurrentUser;
 import com.acme.salary.common.ConflictException;
 import com.acme.salary.common.Money;
 import com.acme.salary.common.NotFoundException;
@@ -28,15 +29,18 @@ public class EmployeeService {
     private final DepartmentRepository departments;
     private final CurrencyConverter converter;
     private final ApplicationEventPublisher events;
+    private final CurrentUser currentUser;
     private final Clock clock;
 
     public EmployeeService(EmployeeRepository employees, CountryRepository countries, DepartmentRepository departments,
-                           CurrencyConverter converter, ApplicationEventPublisher events, Clock clock) {
+                           CurrencyConverter converter, ApplicationEventPublisher events, CurrentUser currentUser,
+                           Clock clock) {
         this.employees = employees;
         this.countries = countries;
         this.departments = departments;
         this.converter = converter;
         this.events = events;
+        this.currentUser = currentUser;
         this.clock = clock;
     }
 
@@ -58,6 +62,7 @@ public class EmployeeService {
         Employee employee = employees.save(new Employee(nextEmployeeCode(), cmd.firstName().trim(),
                 cmd.lastName().trim(), email, country, department, cmd.jobTitle().trim(), cmd.level(),
                 cmd.hireDate(), salary, converter.toUsd(salary), now));
+        employee.editedBy(currentUser.reference().orElse(null));
         events.publishEvent(new EmployeeHired(employee, salary, now));
         events.publishEvent(new WorkforceChanged("employee hired"));
         return employee.getId();
@@ -71,11 +76,14 @@ public class EmployeeService {
         }
         employee.updateProfile(cmd.firstName().trim(), cmd.lastName().trim(), email,
                 department(cmd.departmentId()), cmd.jobTitle().trim(), cmd.level(), clock.instant());
+        employee.editedBy(currentUser.reference().orElse(null));
         events.publishEvent(new WorkforceChanged("profile updated"));
     }
 
     public void changeStatus(long id, EmployeeStatus status, long expectedVersion) {
-        findForUpdate(id, expectedVersion).changeStatus(status, clock.instant());
+        Employee employee = findForUpdate(id, expectedVersion);
+        employee.changeStatus(status, clock.instant());
+        employee.editedBy(currentUser.reference().orElse(null));
         events.publishEvent(new WorkforceChanged("status changed"));
     }
 

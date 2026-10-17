@@ -1,5 +1,6 @@
 package com.acme.salary.salary;
 
+import com.acme.salary.auth.CurrentUser;
 import com.acme.salary.common.ConflictException;
 import com.acme.salary.common.Money;
 import com.acme.salary.common.NotFoundException;
@@ -45,17 +46,19 @@ public class SalaryService {
     private final NamedParameterJdbcTemplate jdbc;
     private final EntityManager em;
     private final ApplicationEventPublisher events;
+    private final CurrentUser currentUser;
     private final Clock clock;
 
     public SalaryService(EmployeeRepository employees, SalaryRecordRepository salaryRecords,
                          CurrencyConverter converter, NamedParameterJdbcTemplate jdbc, EntityManager em,
-                         ApplicationEventPublisher events, Clock clock) {
+                         ApplicationEventPublisher events, CurrentUser currentUser, Clock clock) {
         this.employees = employees;
         this.salaryRecords = salaryRecords;
         this.converter = converter;
         this.jdbc = jdbc;
         this.em = em;
         this.events = events;
+        this.currentUser = currentUser;
         this.clock = clock;
     }
 
@@ -64,7 +67,7 @@ public class SalaryService {
     public void onEmployeeHired(EmployeeHired event) {
         Employee employee = event.employee();
         salaryRecords.save(new SalaryRecord(employee, event.startingSalary(), employee.getHireDate(),
-                SalaryChangeReason.HIRE, null, event.at()));
+                SalaryChangeReason.HIRE, null, event.at(), currentUser.reference().orElse(null)));
     }
 
     /**
@@ -85,10 +88,12 @@ public class SalaryService {
 
         historyOf(employee).checkCanAdd(new NewChange(amount, cmd.effectiveDate(), cmd.reason(), note), today);
         SalaryRecord saved = salaryRecords.save(
-                new SalaryRecord(employee, amount, cmd.effectiveDate(), cmd.reason(), note, now));
+                new SalaryRecord(employee, amount, cmd.effectiveDate(), cmd.reason(), note, now,
+                        currentUser.reference().orElse(null)));
 
         boolean salaryApplied = syncCurrentSalary(employee, today, now);
         boolean timestampChanged = employee.touch(now);
+        employee.editedBy(currentUser.reference().orElse(null));
         if (!salaryApplied && !timestampChanged) {
             // Nothing on the employee row changed (scheduled change, same clock tick), so dirty-checking won't
             // bump the version. Force it: one salary change = exactly one version bump.
@@ -142,7 +147,8 @@ public class SalaryService {
 
     private SalaryHistory historyOf(Employee employee) {
         List<Entry> entries = salaryRecords.findByEmployeeIdOrderByEffectiveDateDescIdDesc(employee.getId()).stream()
-                .map(r -> new Entry(r.getId(), r.getAmount(), r.getEffectiveDate(), r.getReason(), r.getNote()))
+                .map(r -> new Entry(r.getId(), r.getAmount(), r.getEffectiveDate(), r.getReason(), r.getNote(),
+                        r.getRecordedBy() == null ? null : r.getRecordedBy().getFullName()))
                 .toList();
         return new SalaryHistory(employee.getHireDate(), entries);
     }

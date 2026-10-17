@@ -50,9 +50,9 @@ class PersistenceMappingTest {
                 countries.getReferenceById("JP"), departments.getReferenceById(1L), "Software Engineer",
                 JobLevel.L3, LocalDate.of(2024, 4, 1), Money.ofMinor(9_000_000, "JPY"), Money.ofMinor(6_030_000, "USD"), NOW));
         salaryRecords.save(new SalaryRecord(saved, Money.ofMinor(8_000_000, "JPY"), LocalDate.of(2024, 4, 1),
-                SalaryChangeReason.HIRE, null, NOW));
+                SalaryChangeReason.HIRE, null, NOW, null));
         salaryRecords.save(new SalaryRecord(saved, Money.ofMinor(9_000_000, "JPY"), LocalDate.of(2025, 4, 1),
-                SalaryChangeReason.ANNUAL_REVIEW, "Strong year", NOW));
+                SalaryChangeReason.ANNUAL_REVIEW, "Strong year", NOW, null));
         em.flush();
         em.clear();
 

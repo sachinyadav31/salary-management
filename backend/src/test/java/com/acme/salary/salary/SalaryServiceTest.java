@@ -1,5 +1,6 @@
 package com.acme.salary.salary;
 
+import com.acme.salary.auth.CurrentUser;
 import com.acme.salary.common.ConflictException;
 import com.acme.salary.common.Money;
 import com.acme.salary.employee.Employee;
@@ -38,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({EmployeeService.class, SalaryService.class, ReferenceConfig.class, SalaryServiceTest.FixedClock.class})
+@Import({EmployeeService.class, SalaryService.class, ReferenceConfig.class, CurrentUser.class, SalaryServiceTest.FixedClock.class})
 class SalaryServiceTest {
 
     static final LocalDate TODAY = LocalDate.of(2026, 10, 16);

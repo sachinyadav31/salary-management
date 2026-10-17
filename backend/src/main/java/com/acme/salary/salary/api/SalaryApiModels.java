@@ -32,12 +32,14 @@ public final class SalaryApiModels {
         }
     }
 
+    /** {@code recordedBy} is who recorded the change; null for system-generated history. */
     public record SalaryHistoryItem(long id, MoneyView amount, LocalDate effectiveDate, SalaryChangeReason reason,
-                                    String note, EntryStatus status, BigDecimal changePercent) {
+                                    String note, EntryStatus status, BigDecimal changePercent, String recordedBy) {
 
         static SalaryHistoryItem from(TimelineEntry t) {
             return new SalaryHistoryItem(t.entry().sequence(), MoneyView.from(t.entry().amount()),
-                    t.entry().effectiveDate(), t.entry().reason(), t.entry().note(), t.status(), t.changePercent());
+                    t.entry().effectiveDate(), t.entry().reason(), t.entry().note(), t.status(), t.changePercent(),
+                    t.entry().recordedBy());
         }
     }
 

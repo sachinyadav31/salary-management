@@ -7,9 +7,12 @@ import com.acme.salary.payband.BandPosition;
 import com.acme.salary.reference.JobLevel;
 import com.acme.salary.reference.ReferenceDataService;
 import org.junit.jupiter.api.BeforeEach;
+import com.acme.salary.auth.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
@@ -21,6 +24,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @WebMvcTest(InsightsController.class)
+@WithMockUser(roles = "HR")
+@Import(SecurityConfig.class)
 class InsightsControllerTest {
 
     @Autowired MockMvcTester mvc;

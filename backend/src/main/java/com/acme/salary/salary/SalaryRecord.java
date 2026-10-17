@@ -1,5 +1,6 @@
 package com.acme.salary.salary;
 
+import com.acme.salary.auth.AppUser;
 import com.acme.salary.common.Money;
 import com.acme.salary.employee.Employee;
 import jakarta.persistence.Entity;
@@ -39,11 +40,16 @@ public class SalaryRecord {
     private String note;
     private Instant createdAt;
 
+    /** Who recorded this entry; null for system-generated history (seed data). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recorded_by_user_id")
+    private AppUser recordedBy;
+
     protected SalaryRecord() {
     }
 
     public SalaryRecord(Employee employee, Money amount, LocalDate effectiveDate, SalaryChangeReason reason,
-                        String note, Instant createdAt) {
+                        String note, Instant createdAt, AppUser recordedBy) {
         this.employee = employee;
         this.amountMinor = amount.minorUnits();
         this.currencyCode = amount.currencyCode();
@@ -51,6 +57,11 @@ public class SalaryRecord {
         this.reason = reason;
         this.note = note;
         this.createdAt = createdAt;
+        this.recordedBy = recordedBy;
+    }
+
+    public AppUser getRecordedBy() {
+        return recordedBy;
     }
 
     public Money getAmount() {
