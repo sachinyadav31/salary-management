@@ -63,9 +63,11 @@ of size. Trade-off: SQLite's single pooled connection is held during the export,
 ## Frontend bundle
 | Chunk | Raw | Transferred (compressed) |
 |---|---|---|
-| Initial (shell, router, Material core + overlay) | 514 kB | 131 kB |
-| Employees page (lazy) | 102 kB | 22 kB |
-| Insights page (lazy, incl. modular ECharts) | 605 kB | 173 kB |
+| Initial (shell, router, Material core + overlay) | 534 kB | 135 kB |
+| Employees page (lazy) | 91 kB | 20 kB |
+| Employee drawer (lazy) | 88 kB | 21 kB |
+| Insights page (lazy) | 31 kB | 9 kB |
+| ECharts (shared lazy chunk, loaded by the dashboard or the drawer only) | ~575 kB | ~165 kB |
 | World map outlines (static JSON asset, fetched once) | 108 kB | — |
 
 The initial-bundle warning budget was raised from Angular's default 500 kB to 600 kB: the overage is Material's

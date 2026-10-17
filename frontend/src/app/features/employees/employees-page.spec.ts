@@ -5,7 +5,8 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
-import { EmployeeSummary, Meta, PageResponse } from '../../core/api/models';
+import { EmployeeApi } from '../../core/api/employee-api';
+import { EmployeeDetail, EmployeeSummary, Meta, PageResponse } from '../../core/api/models';
 import { EmployeesPage } from './employees-page';
 
 const META: Meta = {
@@ -138,5 +139,17 @@ describe('EmployeesPage', () => {
     expect(TestBed.inject(Router).url).toBe('/employees/201?country=IN&bandPosition=BELOW');
     http.expectNone((req) => req.url === '/api/employees'); // the list is not refetched
     expect(harness.routeNativeElement!.querySelector('tr.open')).not.toBeNull();
+  });
+
+  it('refreshes the current page after an employee is saved in the drawer', async () => {
+    await open('/employees?country=IN&page=2');
+    expectSearch().flush(page([TOM], 100));
+    harness.detectChanges();
+
+    TestBed.inject(EmployeeApi).notifyChanged({ ...TOM, version: 2 } as EmployeeDetail);
+
+    const params = expectSearch().request.params;
+    expect(params.getAll('country')).toEqual(['IN']);
+    expect(params.get('page')).toBe('2');
   });
 });

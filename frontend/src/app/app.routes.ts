@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { canLeaveGuard } from './shared/can-leave';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'insights' },
@@ -18,6 +19,7 @@ export const routes: Routes = [
         path: ':id',
         title: 'Employee · Pay Atlas',
         loadComponent: () => import('./features/employees/detail/employee-drawer').then((m) => m.EmployeeDrawer),
+        canDeactivate: [canLeaveGuard],
       },
     ],
   },

@@ -1,0 +1,66 @@
+.form {
+  display: grid;
+  // Room for an outlined field's floating label above the previous field's hint.
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--pa-accent) 40%, var(--pa-border));
+  border-radius: var(--pa-radius);
+  background: var(--pa-surface);
+
+  h3 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 650;
+  }
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 12px;
+
+  .grow { flex: 1 1 200px; }
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.row mat-form-field {
+  width: auto;
+}
+
+.preview {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  background: var(--pa-surface-2);
+
+  &.below { box-shadow: inset 3px 0 0 var(--pa-below); }
+  &.within { box-shadow: inset 3px 0 0 var(--pa-within); }
+  &.above { box-shadow: inset 3px 0 0 var(--pa-above); }
+
+  .delta { font-weight: 650; color: var(--pa-within); }
+  .delta.down { color: var(--pa-below); }
+}
+
+.form-error {
+  margin: 0 0 8px;
+  color: var(--pa-below);
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+
+  .scheduled {
+    margin-right: auto;
+    font-size: 12px;
+  }
+}
+.note { margin: 0 0 8px; font-size: 12px; }

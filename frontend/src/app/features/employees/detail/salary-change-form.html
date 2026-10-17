@@ -1,0 +1,74 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="form card" aria-label="Record a salary change" novalidate>
+  <h3>Record a salary change</h3>
+
+  <div class="row">
+    <mat-form-field appearance="outline" class="grow">
+      <mat-label>New annual salary</mat-label>
+      <span matTextPrefix>{{ currencySymbol() }}&nbsp;</span>
+      <input matInput formControlName="amount" inputmode="decimal" autocomplete="off" cdkFocusInitial />
+      <mat-hint>Currently {{ employee().salary | money }}</mat-hint>
+      @if (amountError(); as message) { <mat-error>{{ message }}</mat-error> }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Effective date</mat-label>
+      <input matInput type="date" formControlName="effectiveDate" [min]="employee().hireDate" [max]="maxDate" />
+      @if (form.controls.effectiveDate.errors; as e) {
+        <mat-error>
+          @if (e['server']) { {{ e['server'] }} }
+          @else if (e['beforeHire']) { Not before the hire date ({{ e['beforeHire'] | date: 'd MMM y' }}) }
+          @else if (e['tooFar']) { At most one year ahead }
+          @else { Choose a date }
+        </mat-error>
+      }
+    </mat-form-field>
+  </div>
+
+  @if (preview(); as p) {
+    <div class="preview" [class]="'preview ' + (p.position?.toLowerCase() ?? '')" aria-live="polite">
+      <span class="delta num" [class.down]="p.changePercent < 0">{{ p.changePercent > 0 ? '+' : '' }}{{ p.changePercent | number: '1.1-1' }}%</span>
+      vs current
+      @if (p.compaRatio !== null) {
+        · new compa-ratio <strong class="num">{{ p.compaRatio | number: '1.2-2' }}</strong>
+        · @switch (p.position) {
+          @case ('BELOW') { below band minimum ({{ employee().payBand!.min | money }}) }
+          @case ('ABOVE') { above band maximum ({{ employee().payBand!.max | money }}) }
+          @default { within band }
+        }
+      }
+    </div>
+  }
+
+  <div class="row">
+    <mat-form-field appearance="outline" class="grow">
+      <mat-label>Reason</mat-label>
+      <mat-select formControlName="reason">
+        @for (r of reasons; track r) { <mat-option [value]="r">{{ reasonLabel(r) }}</mat-option> }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Note{{ form.controls.reason.value === 'CORRECTION' ? ' (required for corrections)' : ' (optional)' }}</mat-label>
+    <textarea matInput formControlName="note" rows="2"></textarea>
+    @if (form.controls.note.errors; as e) {
+      <mat-error>
+        @if (e['server']) { {{ e['server'] }} }
+        @else if (e['requiredForCorrection']) { Explain what is being corrected }
+        @else { At most 500 characters }
+      </mat-error>
+    }
+  </mat-form-field>
+
+  @if (serverErrors()?.['_form']; as message) {
+    <p class="form-error" role="alert">{{ message }}</p>
+  }
+
+  <div class="actions">
+    @if (scheduled()) {
+      <span class="scheduled muted">Scheduled · takes effect {{ form.controls.effectiveDate.value | date: 'd MMM y' }}</span>
+    }
+    <button mat-button type="button" (click)="cancelled.emit()">Cancel</button>
+    <button mat-flat-button type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save change' }}</button>
+  </div>
+</form>

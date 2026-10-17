@@ -212,3 +212,34 @@ pa-band-bar.big {
 @media (max-width: 600px) {
   .drawer { width: 100vw; padding: 16px 16px 96px; }
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  .danger { color: var(--pa-below); }
+  .small { font-size: 12px; }
+}
+
+.form-error {
+  margin: 0;
+  color: var(--pa-below);
+  font-size: 13px;
+}
+
+.conflict {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--pa-watch) 50%, var(--pa-border));
+  border-radius: var(--pa-radius);
+  background: color-mix(in srgb, var(--pa-watch) 10%, var(--pa-surface));
+  animation: fade 200ms ease;
+
+  > mat-icon { color: var(--pa-watch); flex: none; }
+  > div { flex: 1; }
+  p { margin: 4px 0 0; font-size: 13px; }
+  ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+}

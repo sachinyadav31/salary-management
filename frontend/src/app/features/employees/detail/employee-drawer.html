@@ -17,6 +17,48 @@
       <button mat-icon-button type="button" class="close" aria-label="Close" (click)="close()"><mat-icon>close</mat-icon></button>
     </header>
 
+    @if (conflict(); as changes) {
+      <div class="conflict" role="alert">
+        <mat-icon>sync_problem</mat-icon>
+        <div>
+          <strong>{{ e.firstName }} was updated by someone else while you were editing.</strong>
+          <p>The latest version is loaded{{ mode() !== 'view' ? ' and your edits are kept' : '' }}. Review, then save again.</p>
+          @if (changes.length) {
+            <ul>
+              @for (c of changes; track c.field) { <li><span class="muted">{{ c.field }}:</span> {{ c.from }} → <strong>{{ c.to }}</strong></li> }
+            </ul>
+          } @else {
+            <p class="muted">Their change didn't affect the fields shown here (for example a scheduled salary change).</p>
+          }
+        </div>
+        <button mat-icon-button type="button" aria-label="Dismiss" (click)="dismissConflict()"><mat-icon>close</mat-icon></button>
+      </div>
+    }
+
+    @switch (mode()) {
+      @case ('salary') {
+        <pa-salary-change-form [employee]="e" [serverErrors]="serverErrors()" [saving]="saving()"
+                               (submitted)="saveSalaryChange($event)" (cancelled)="cancelEdit()" />
+      }
+      @case ('edit') {
+        <pa-profile-form [employee]="e" [meta]="meta()" [serverErrors]="serverErrors()" [saving]="saving()"
+                         (submitted)="saveProfile($event)" (cancelled)="cancelEdit()" />
+      }
+      @default {
+        <div class="actions">
+          @if (e.status === 'ACTIVE') {
+            <button mat-flat-button type="button" (click)="startEdit('salary')"><mat-icon>payments</mat-icon> Record salary change</button>
+            <button mat-stroked-button type="button" (click)="startEdit('edit')"><mat-icon>edit</mat-icon> Edit profile</button>
+            <button mat-button type="button" class="danger" (click)="changeStatus('INACTIVE')">Deactivate</button>
+          } @else {
+            <button mat-flat-button type="button" (click)="changeStatus('ACTIVE')"><mat-icon>person_check</mat-icon> Reactivate</button>
+            <span class="muted small">Inactive employees can't receive salary changes.</span>
+          }
+        </div>
+        @if (serverErrors()?.['_form']; as message) { <p class="form-error" role="alert">{{ message }}</p> }
+      }
+    }
+
     <section class="pay card" aria-label="Current pay">
       <div class="pay-top">
         <div>

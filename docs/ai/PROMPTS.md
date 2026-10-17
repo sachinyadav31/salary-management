@@ -208,3 +208,21 @@ For each phase: plan → review the plan → implement test-first → run tests 
      bug fails CI instead of failing silently.
   3. Single-record histories drew nothing; the solid line now carries the current salary forward to today.
   4. Duplicate y-axis labels (¥6.6M twice); axis ticks now use 3 significant digits.
+
+### Phase 14c — Edit, salary change, deactivate, conflicts
+- Presentational forms (salary change, profile) emit requests; the drawer submits and handles every error class:
+  400 → messages on the matching fields, 409 → conflict flow, other → form-level message.
+- Conflict flow: on 409 the drawer immediately loads the latest version, shows *what changed* (field diff), and keeps
+  the user's form open with their input, so the next save carries the new version and nothing is lost or silently
+  overwritten. Verified live by editing the same employee with `curl` while the form was open: the colleague's
+  L2 → L3 change moved the employee into a new band, and the same typed ¥7.2M re-previewed from "above band" to
+  "compa 0.94, within band". That's exactly why re-saving must be a deliberate step.
+- Live salary preview (% change, compa-ratio, band position) uses the backend's integer formula; amounts are parsed
+  with string arithmetic.
+- Deactivation asks for confirmation; reactivation doesn't. A reusable `canLeaveGuard` asks before closing with
+  unsaved input (X, backdrop, Escape, Back). It lives in its own file so the route config doesn't pull the lazy
+  drawer into the main bundle.
+- Caught before running: validators reading a required signal input during FormControl construction (would throw
+  NG0950). They read a snapshot synced by an effect instead.
+- Found while checking in the browser: a field hint crowding the next row's floating label in the narrow drawer
+  (added row spacing). A test-setup gap (router input binding missing in the test, unlike the app) was fixed in the test.
