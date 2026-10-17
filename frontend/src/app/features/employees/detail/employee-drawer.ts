@@ -1,7 +1,7 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { A11yModule } from '@angular/cdk/a11y';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, afterRenderEffect, computed, inject, input, signal, viewChild } from '@angular/core';
+import { Component, afterNextRender, computed, inject, input, signal, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -15,7 +15,6 @@ import { EmployeeApi } from '../../../core/api/employee-api';
 import { MetaApi } from '../../../core/api/meta-api';
 import { problemMessage } from '../../../core/api/problem-interceptor';
 import { EmployeeDetail, EmployeeStatus, ProblemDetail, SalaryHistoryItem } from '../../../core/api/models';
-import { ThemeService } from '../../../core/theme';
 import { BandBar } from '../../../shared/band-bar';
 import { Chart } from '../../../shared/charts/chart';
 import { ChartPalette, resolvePalette } from '../../../shared/charts/palette';
@@ -56,7 +55,6 @@ export class EmployeeDrawer implements CanLeave {
   private readonly api = inject(EmployeeApi);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly theme = inject(ThemeService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   protected readonly meta = toSignal(inject(MetaApi).meta$);
@@ -102,10 +100,7 @@ export class EmployeeDrawer implements CanLeave {
   });
 
   constructor() {
-    afterRenderEffect(() => {
-      this.theme.mode();
-      this.palette.set(resolvePalette());
-    });
+    afterNextRender(() => this.palette.set(resolvePalette()));
   }
 
   protected retry(): void {

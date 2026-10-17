@@ -239,3 +239,12 @@ For each phase: plan → review the plan → implement test-first → run tests 
   `static/` instead of `static/media/`. My test covered a `.js` bundle but no font, and my local Docker smoke test
   didn't request one. Fixed, added a font regression test, and re-verified by fetching the real fonts from a
   rebuilt image. Lesson: smoke-test every asset type the page actually loads, not just the HTML and the API.
+
+### Phase 16a — Light, Incubyte-inspired theme
+- Studied incubyte.co (brand extraction + browsing): forest green #014D43, lime #CBDF7A, navy text, Inclusive Sans,
+  serif display headlines, pill buttons, calm light surfaces.
+- Because every colour was already a token, the re-theme was mostly new token values: Material theme overrides,
+  pill button shapes, Fraunces (open-source serif) for headings, Inclusive Sans for UI, Inter kept for tabular
+  numbers. The user chose light-only, so the theme service, toggle and light/dark pairs were removed (no dead code).
+- Deliberately not used: Incubyte's logo or name inside the product. The brief's client is ACME, so the app stays
+  "Pay Atlas", with a small credit line for the assessment.

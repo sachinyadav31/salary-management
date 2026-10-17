@@ -20,8 +20,7 @@
   gap: 6px;
   padding: 18px 10px;
   border-right: 1px solid var(--pa-border);
-  background: color-mix(in srgb, var(--pa-surface) 70%, transparent);
-  backdrop-filter: blur(12px);
+  background: var(--pa-surface);
 }
 
 .brand {
@@ -67,9 +66,10 @@
     outline-offset: 2px;
   }
 
+  // Lime pill with forest-green ink, like Incubyte's announcement bar.
   &.active {
     color: var(--pa-accent);
-    background: color-mix(in srgb, var(--pa-accent) 12%, transparent);
+    background: var(--pa-accent-2);
   }
 }
 
@@ -82,6 +82,12 @@
   padding: 28px clamp(16px, 3vw, 40px) 40px;
 }
 
+.credit {
+  margin-top: 32px;
+  font-size: 12px;
+  text-align: center;
+}
+
 .topbar {
   display: flex;
   align-items: flex-start;
@@ -91,8 +97,9 @@
 
   h1 {
     margin: 0;
-    font-size: clamp(26px, 3vw, 34px);
-    font-weight: 650;
+    font-size: clamp(30px, 3.4vw, 42px);
+    font-weight: 600;
+    line-height: 1.1;
   }
 
   p {

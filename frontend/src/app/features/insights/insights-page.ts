@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, afterRenderEffect, computed, inject, signal } from '@angular/core';
+import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -12,7 +12,6 @@ import { Subject, combineLatest, map, startWith } from 'rxjs';
 import { InsightsApi } from '../../core/api/insights-api';
 import { MetaApi } from '../../core/api/meta-api';
 import { CountryInsight, Money, OutlierCard, OutlierType } from '../../core/api/models';
-import { ThemeService } from '../../core/theme';
 import { Chart, ChartClick } from '../../shared/charts/chart';
 import { ChartPalette, resolvePalette } from '../../shared/charts/palette';
 import { WorldMapLoader } from '../../shared/charts/world-map';
@@ -47,7 +46,6 @@ export class InsightsPage {
   private readonly api = inject(InsightsApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly theme = inject(ThemeService);
   private readonly worldMap = inject(WorldMapLoader);
 
   protected readonly meta = toSignal(inject(MetaApi).meta$);
@@ -81,7 +79,7 @@ export class InsightsPage {
     { initialValue: LOADING },
   );
 
-  /** Canvas colours follow the theme; resolved after render so the new theme attribute is already applied. */
+  /** Canvas needs concrete colours; resolved from the CSS tokens once the page has rendered. */
   private readonly palette = signal<ChartPalette | null>(null);
 
   protected readonly selected = computed(() =>
@@ -117,10 +115,7 @@ export class InsightsPage {
   protected readonly formatPercent = (value: number) => `${value.toFixed(1)}%`;
 
   constructor() {
-    afterRenderEffect(() => {
-      this.theme.mode();
-      this.palette.set(resolvePalette());
-    });
+    afterNextRender(() => this.palette.set(resolvePalette()));
   }
 
   protected reload(): void {

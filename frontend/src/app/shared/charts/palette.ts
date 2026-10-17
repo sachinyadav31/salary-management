@@ -1,4 +1,4 @@
-/** Concrete colours for canvas drawing, resolved from the app's CSS tokens for the current theme. */
+/** Concrete colours for canvas drawing, resolved from the app's CSS tokens. */
 export interface ChartPalette {
   text: string;
   muted: string;
@@ -28,9 +28,9 @@ const TOKENS: Record<keyof ChartPalette, string> = {
 };
 
 /**
- * Reading a custom property returns its unresolved text (e.g. `light-dark(#fff, #000)`), which a canvas
- * can't use. Painting a probe element with `color: var(--token)` and reading the computed colour gives the
- * concrete value for the active colour scheme.
+ * A custom property can hold any CSS colour syntax (hex, color-mix(), …) and reads back as that raw text.
+ * Painting a probe element with `color: var(--token)` and reading the computed colour always yields a
+ * concrete rgb() value the canvas can use, so the tokens stay the single source of truth.
  */
 export function resolvePalette(doc: Document = document): ChartPalette {
   const probe = doc.createElement('span');

@@ -169,13 +169,8 @@ table {
   border-radius: 50%;
   font-size: 12px;
   font-weight: 650;
-  color: hsl(var(--hue) 70% 85%);
-  background: hsl(var(--hue) 45% 28%);
-}
-
-:host-context(html[data-theme='light']) .avatar {
-  color: hsl(var(--hue) 55% 30%);
-  background: hsl(var(--hue) 70% 90%);
+  color: hsl(var(--hue) 55% 28%);
+  background: hsl(var(--hue) 60% 90%);
 }
 
 .name {

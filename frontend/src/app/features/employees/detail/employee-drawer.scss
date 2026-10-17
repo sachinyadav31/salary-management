@@ -9,7 +9,7 @@
 .backdrop {
   position: absolute;
   inset: 0;
-  background: rgb(2 6 23 / 45%);
+  background: rgb(6 10 30 / 35%);
   backdrop-filter: blur(2px);
   animation: fade 200ms ease;
 }
@@ -58,8 +58,8 @@
   height: 52px;
   border-radius: 16px;
   font-weight: 650;
-  color: var(--pa-bg);
-  background: linear-gradient(135deg, var(--pa-accent), var(--pa-accent-2));
+  color: #fff;
+  background: linear-gradient(135deg, var(--pa-accent), #2b7a5f);
 }
 
 .meta {

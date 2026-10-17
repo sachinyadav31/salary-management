@@ -30,16 +30,4 @@ describe('App shell', () => {
 
     expect(fixture.nativeElement.querySelector('.fx-chip').textContent).toContain('FX as of 2026-10-01');
   });
-
-  it('toggles the theme on the document', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const toggle = fixture.nativeElement.querySelector('nav button') as HTMLButtonElement;
-
-    toggle.click();
-    fixture.detectChanges();
-    TestBed.tick();
-
-    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
-  });
 });

@@ -1,64 +1,79 @@
 @use '@angular/material' as mat;
 
-// Pay Atlas theme. Dark-first; every colour is a light-dark() pair, so switching
-// `color-scheme` on <html> (see ThemeService) flips the whole app, Material included.
+// Pay Atlas theme: light, calm, inspired by Incubyte's design language (forest green, lime accent,
+// serif headlines, pill buttons). All colours are tokens below; components never hard-code colours.
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 
   @include mat.theme((
     color: (
-      primary: mat.$cyan-palette,
-      tertiary: mat.$violet-palette,
+      primary: mat.$green-palette,
+      tertiary: mat.$chartreuse-palette,
+      theme-type: light,
     ),
     typography: (
-      plain-family: 'Inter Variable',
-      brand-family: 'Space Grotesk Variable',
-      bold-weight: 650,
-      medium-weight: 550,
+      plain-family: 'Inclusive Sans',
+      brand-family: 'Fraunces Variable',
+      bold-weight: 600,
+      medium-weight: 500,
       regular-weight: 400,
     ),
     density: -1,
   ));
 
-  // Align Material surfaces with the Pay Atlas navy palette.
+  // Material system colours aligned with the brand (forest green #014D43, lime #CBDF7A).
   @include mat.theme-overrides((
-    surface: light-dark(#f4f6fb, #070d1a),
-    surface-container-lowest: light-dark(#ffffff, #0a1222),
-    surface-container-low: light-dark(#ffffff, #0e1729),
-    surface-container: light-dark(#ffffff, #111b30),
-    surface-container-high: light-dark(#eef2f8, #152139),
-    surface-container-highest: light-dark(#e6ebf3, #1a2742),
-    outline-variant: light-dark(#dde3ee, #22304d),
+    primary: #014d43,
+    on-primary: #ffffff,
+    primary-container: #cbdf7a,
+    on-primary-container: #0d2e1f,
+    secondary-container: #e3efd0,
+    on-secondary-container: #014d43,
+    surface: #eef6f1,
+    surface-container-lowest: #ffffff,
+    surface-container-low: #ffffff,
+    surface-container: #ffffff,
+    surface-container-high: #f3f8f4,
+    surface-container-highest: #e8f1ec,
+    on-surface: #060a1e,
+    on-surface-variant: #4e5d56,
+    outline: #9aaba3,
+    outline-variant: #d6e4dc,
   ));
 
+  // Pill-shaped buttons, as on incubyte.co.
+  --mat-button-filled-container-shape: 999px;
+  --mat-button-outlined-container-shape: 999px;
+  --mat-button-text-container-shape: 999px;
+  --mat-button-protected-container-shape: 999px;
+  --mat-button-tonal-container-shape: 999px;
+
   // App design tokens.
-  --pa-bg: light-dark(#f4f6fb, #070d1a);
-  --pa-surface: light-dark(#ffffff, #0e1729);
-  --pa-surface-2: light-dark(#eef2f8, #142039);
-  --pa-border: light-dark(#dde3ee, #1f2c47);
-  --pa-text: light-dark(#0f172a, #e6edf7);
-  --pa-muted: light-dark(#5b6b84, #8ea0bd);
-  --pa-accent: light-dark(#0891b2, #22d3ee);
-  --pa-accent-2: light-dark(#7c3aed, #a78bfa);
+  --pa-bg: #eef6f1;
+  --pa-surface: #ffffff;
+  --pa-surface-2: #f3f8f4;
+  --pa-border: #d6e4dc;
+  --pa-text: #060a1e;
+  --pa-muted: #55635c;
+  --pa-accent: #014d43;   // forest green: primary actions, headings, active states
+  --pa-accent-2: #cbdf7a; // lime: highlights, gradients' light end
+  --pa-lime-ink: #2f3d0a; // readable text on lime
 
   // Band position colours: the same meaning on every screen.
-  --pa-below: light-dark(#dc4a33, #ff7a5c);
-  --pa-within: light-dark(#0d9488, #2dd4bf);
-  --pa-above: light-dark(#7c3aed, #a78bfa);
-  // Country band-health (map): healthy uses --pa-within, concern uses --pa-below.
-  --pa-watch: light-dark(#d97706, #fbbf24);
+  --pa-below: #c2410c;  // terracotta
+  --pa-within: #1f8a5b; // healthy green
+  --pa-above: #6d5bd0;  // muted violet
+  // Country band health on the map: healthy = within, concern = below.
+  --pa-watch: #b7791f;
 
-  --pa-radius: 14px;
-  --pa-font-display: 'Space Grotesk Variable', 'Inter Variable', system-ui, sans-serif;
-  --pa-font-body: 'Inter Variable', system-ui, sans-serif;
-  --pa-shadow: light-dark(0 1px 2px rgb(15 23 42 / 6%), 0 1px 0 rgb(255 255 255 / 3%) inset);
-  --pa-glow: radial-gradient(1200px 600px at 10% -10%, light-dark(rgb(8 145 178 / 8%), rgb(34 211 238 / 10%)), transparent 60%),
-             radial-gradient(900px 500px at 110% 10%, light-dark(rgb(124 58 237 / 6%), rgb(167 139 250 / 9%)), transparent 60%);
-}
-
-html[data-theme='light'] {
-  color-scheme: light;
+  --pa-radius: 16px;
+  --pa-font-display: 'Fraunces Variable', Georgia, serif;
+  --pa-font-body: 'Inclusive Sans', system-ui, sans-serif;
+  --pa-font-numbers: 'Inter Variable', system-ui, sans-serif;
+  --pa-shadow: 0 1px 2px rgb(1 77 67 / 6%);
+  --pa-glow: radial-gradient(900px 480px at 100% -10%, rgb(203 223 122 / 35%), transparent 60%),
+             radial-gradient(800px 500px at -10% 110%, rgb(1 77 67 / 6%), transparent 60%);
 }
 
 html, body {
@@ -73,17 +88,20 @@ body {
   font: var(--mat-sys-body-medium);
   font-family: var(--pa-font-body);
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: 'cv11', 'ss01';
 }
 
-// Tabular figures keep numbers aligned in tables and KPI cards.
+// Numbers use Inter's tabular figures so columns of amounts line up.
 .num {
+  font-family: var(--pa-font-numbers);
   font-variant-numeric: tabular-nums;
 }
 
+// Serif display face for headings and headline numbers (Incubyte-style).
 .display {
   font-family: var(--pa-font-display);
-  letter-spacing: -0.02em;
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
+  color: var(--pa-accent);
 }
 
 .muted {

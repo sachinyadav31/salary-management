@@ -6,7 +6,6 @@ import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, Ro
 import { filter, map } from 'rxjs';
 
 import { MetaApi } from './core/api/meta-api';
-import { ThemeService } from './core/theme';
 
 interface PageHeading {
   heading: string;
@@ -20,7 +19,6 @@ interface PageHeading {
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly theme = inject(ThemeService);
   protected readonly meta = toSignal(inject(MetaApi).meta$);
 
   private readonly route = inject(ActivatedRoute);
