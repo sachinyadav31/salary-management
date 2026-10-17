@@ -13,7 +13,8 @@ import java.util.Objects;
 public final class CareerChanges {
 
     /** The career-relevant facts about an employee at one moment. */
-    public record Snapshot(JobLevel level, String jobTitle, String department, EmployeeStatus status) {
+    public record Snapshot(JobLevel level, String jobTitle, String department, EmployeeStatus status,
+                           VariableTarget variableTarget) {
     }
 
     public record Change(CareerEventType type, String from, String to) {
@@ -32,6 +33,10 @@ public final class CareerChanges {
         }
         if (!Objects.equals(before.department(), after.department())) {
             changes.add(new Change(CareerEventType.DEPARTMENT_CHANGED, before.department(), after.department()));
+        }
+        if (!Objects.equals(before.variableTarget(), after.variableTarget())) {
+            changes.add(new Change(CareerEventType.VARIABLE_TARGET_CHANGED, before.variableTarget().label(),
+                    after.variableTarget().label()));
         }
         if (before.status() != after.status()) {
             changes.add(new Change(after.status() == EmployeeStatus.ACTIVE ? CareerEventType.REACTIVATED

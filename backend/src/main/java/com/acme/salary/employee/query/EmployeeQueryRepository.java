@@ -4,6 +4,7 @@ import com.acme.salary.common.Money;
 import com.acme.salary.common.web.MoneyView;
 import com.acme.salary.common.web.PageResponse;
 import com.acme.salary.employee.EmployeeStatus;
+import com.acme.salary.employee.VariableTarget;
 import com.acme.salary.payband.BandPosition;
 import com.acme.salary.payband.CompaRatio;
 import com.acme.salary.payband.PayBandView;
@@ -110,12 +111,19 @@ public class EmployeeQueryRepository {
     }
 
     public Optional<EmployeeDetail> findDetail(long id) {
-        return jdbc.query(COLUMNS + ", u.full_name as updated_by_name " + FROM
+        return jdbc.query(COLUMNS + ", u.full_name as updated_by_name, e.variable_target_bp " + FROM
                         + " left join app_user u on u.id = e.updated_by_user_id where e.id = :id",
                 new MapSqlParameterSource("id", id),
-                (rs, i) -> new EmployeeDetail(ROW_MAPPER.mapRow(rs, i), rs.getLong("version"),
-                        Instant.parse(rs.getString("created_at")), Instant.parse(rs.getString("updated_at")),
-                        rs.getString("updated_by_name")))
+                (rs, i) -> {
+                    EmployeeSummary summary = ROW_MAPPER.mapRow(rs, i);
+                    VariableTarget target = new VariableTarget(rs.getInt("variable_target_bp"));
+                    Money base = Money.ofMinor(summary.salary().minorUnits(), summary.salary().currency());
+                    Money variable = target.of(base);
+                    return new EmployeeDetail(summary, rs.getLong("version"),
+                            Instant.parse(rs.getString("created_at")), Instant.parse(rs.getString("updated_at")),
+                            rs.getString("updated_by_name"), target.percent(), MoneyView.from(variable),
+                            MoneyView.from(base.plus(variable)));
+                })
                 .stream().findFirst();
     }
 

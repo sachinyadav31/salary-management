@@ -4,6 +4,9 @@ import com.acme.salary.employee.EmployeeCommands.CreateEmployee;
 import com.acme.salary.employee.EmployeeCommands.UpdateProfile;
 import com.acme.salary.employee.EmployeeStatus;
 import com.acme.salary.reference.JobLevel;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -44,10 +47,11 @@ public final class EmployeeRequests {
             @NotNull Long departmentId,
             @NotBlank @Size(max = 100) String jobTitle,
             @NotNull JobLevel level,
+            @DecimalMin("0") @DecimalMax("100") @Digits(integer = 3, fraction = 2) BigDecimal variableTargetPercent,
             @NotNull Long version) {
 
         UpdateProfile toCommand() {
-            return new UpdateProfile(firstName, lastName, email, departmentId, jobTitle, level, version);
+            return new UpdateProfile(firstName, lastName, email, departmentId, jobTitle, level, variableTargetPercent, version);
         }
     }
 

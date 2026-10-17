@@ -17,8 +17,16 @@ public final class EmployeeCommands {
                                  BigDecimal salaryAmount) {
     }
 
-    /** {@code expectedVersion} is the version the client loaded; a mismatch means someone else saved first. */
+    /**
+     * {@code expectedVersion} is the version the client loaded; a mismatch means someone else saved first.
+     * {@code variableTargetPercent} null = unchanged.
+     */
     public record UpdateProfile(String firstName, String lastName, String email, long departmentId,
-                                String jobTitle, JobLevel level, long expectedVersion) {
+                                String jobTitle, JobLevel level, BigDecimal variableTargetPercent, long expectedVersion) {
+
+        public UpdateProfile(String firstName, String lastName, String email, long departmentId, String jobTitle,
+                             JobLevel level, long expectedVersion) {
+            this(firstName, lastName, email, departmentId, jobTitle, level, null, expectedVersion);
+        }
     }
 }

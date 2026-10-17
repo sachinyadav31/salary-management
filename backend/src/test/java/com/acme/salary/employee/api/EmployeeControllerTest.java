@@ -142,7 +142,8 @@ class EmployeeControllerTest {
     }
 
     private static final EmployeeDetail AKIRA_DETAIL = new EmployeeDetail(AKIRA, 3,
-            Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-16T10:00:00Z"), "Priya Sharma");
+            Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-16T10:00:00Z"), "Priya Sharma",
+            new BigDecimal("10"), MoneyView.from(Money.ofMinor(900_000, "JPY")), MoneyView.from(Money.ofMinor(9_900_000, "JPY")));
 
     private static final String VALID_CREATE = """
             {"firstName": "Akira", "lastName": "Ito", "email": "akira@acme.example", "countryCode": "JP",

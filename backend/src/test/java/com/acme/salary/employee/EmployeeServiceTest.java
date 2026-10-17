@@ -197,4 +197,19 @@ class EmployeeServiceTest {
     void careerEventsOfUnknownEmployeeAreNotFound() {
         assertThatThrownBy(() -> service.careerEvents(424242)).isInstanceOf(NotFoundException.class);
     }
+
+    @Test
+    void newHiresGetTheDefaultVariableTargetForTheirRoleAndHrCanChangeIt() {
+        long id = service.create(newHire("IN", "1500000")); // Engineering L3 -> 10%
+        em.flush();
+        assertThat(employees.findById(id).orElseThrow().getVariableTarget()).isEqualTo(new VariableTarget(1000));
+
+        service.updateProfile(id, new UpdateProfile("Akira", "Ito", "new.hire@acme.test", 1, "Software Engineer",
+                JobLevel.L3, new BigDecimal("12.5"), 0));
+        em.flush();
+
+        assertThat(employees.findById(id).orElseThrow().getVariableTarget()).isEqualTo(new VariableTarget(1250));
+        assertThat(service.careerEvents(id)).singleElement()
+                .satisfies(e -> assertThat(e.type() + " " + e.from() + "->" + e.to()).isEqualTo("VARIABLE_TARGET_CHANGED 10%->12.5%"));
+    }
 }

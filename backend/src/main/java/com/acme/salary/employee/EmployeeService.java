@@ -67,6 +67,7 @@ public class EmployeeService {
                 cmd.lastName().trim(), email, country, department, cmd.jobTitle().trim(), cmd.level(),
                 cmd.hireDate(), salary, converter.toUsd(salary), now);
         // Set before saving: one INSERT at version 0 (setting it after would dirty the new row and bump the version).
+        employee.changeVariableTarget(VariableTarget.defaultFor(department.getName(), cmd.level()), now);
         employee.editedBy(currentUser.reference().orElse(null));
         employees.save(employee);
         publisher.publishEvent(new EmployeeHired(employee, salary, now));
@@ -83,6 +84,9 @@ public class EmployeeService {
         CareerChanges.Snapshot before = snapshot(employee);
         employee.updateProfile(cmd.firstName().trim(), cmd.lastName().trim(), email,
                 department(cmd.departmentId()), cmd.jobTitle().trim(), cmd.level(), clock.instant());
+        if (cmd.variableTargetPercent() != null) {
+            employee.changeVariableTarget(VariableTarget.ofPercent(cmd.variableTargetPercent()), clock.instant());
+        }
         employee.editedBy(currentUser.reference().orElse(null));
         recordCareerEvents(employee, before);
         publisher.publishEvent(new WorkforceChanged("profile updated"));
@@ -128,7 +132,8 @@ public class EmployeeService {
     }
 
     private static CareerChanges.Snapshot snapshot(Employee e) {
-        return new CareerChanges.Snapshot(e.getLevel(), e.getJobTitle(), e.getDepartment().getName(), e.getStatus());
+        return new CareerChanges.Snapshot(e.getLevel(), e.getJobTitle(), e.getDepartment().getName(), e.getStatus(),
+                e.getVariableTarget());
     }
 
     private Department department(long id) {

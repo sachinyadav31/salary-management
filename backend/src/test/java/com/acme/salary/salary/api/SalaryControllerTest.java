@@ -64,7 +64,7 @@ class SalaryControllerTest {
     @Test
     void recordsChangeAndReturns201WithEmployeeAndHistory() {
         when(salaryService.timeline(7)).thenReturn(TIMELINE);
-        when(employeeQueries.findDetail(7)).thenReturn(Optional.of(new EmployeeDetail(null, 1, null, null, null)));
+        when(employeeQueries.findDetail(7)).thenReturn(Optional.of(new EmployeeDetail(null, 1, null, null, null, null, null, null)));
 
         assertThat(mvc.post().with(csrf()).uri("/api/employees/7/salary-changes").contentType(MediaType.APPLICATION_JSON).content("""
                 {"amount": "88000", "effectiveDate": "2026-10-16", "reason": "PROMOTION",

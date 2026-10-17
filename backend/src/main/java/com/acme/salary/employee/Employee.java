@@ -62,6 +62,9 @@ public class Employee {
     @Version
     private long version;
 
+    /** Variable pay target in basis points of base salary (1000 = 10%). */
+    private int variableTargetBp;
+
     /** Who last edited this employee (null: created by the seed or changed only by system jobs). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "updated_by_user_id")
@@ -136,6 +139,15 @@ public class Employee {
         if (version != expectedVersion) {
             throw new ConflictException("Employee " + id + " was changed by someone else. Reload and try again.");
         }
+    }
+
+    public VariableTarget getVariableTarget() {
+        return new VariableTarget(variableTargetBp);
+    }
+
+    public void changeVariableTarget(VariableTarget target, Instant now) {
+        this.variableTargetBp = target.basisPoints();
+        this.updatedAt = now;
     }
 
     /** Records who made a user-initiated change (system jobs leave the last editor unchanged). */

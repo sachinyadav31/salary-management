@@ -2,6 +2,9 @@ package com.acme.salary.employee.query;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
+import com.acme.salary.common.web.MoneyView;
+
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -13,5 +16,8 @@ public record EmployeeDetail(
         long version,
         Instant createdAt,
         Instant updatedAt,
-        String updatedBy) {
+        String updatedBy,
+        BigDecimal variableTargetPercent,
+        MoneyView variableTarget,
+        MoneyView totalTargetCash) {
 }

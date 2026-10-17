@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class CareerChangesTest {
 
-    private final Snapshot engineer = new Snapshot(JobLevel.L2, "Software Engineer", "Engineering", EmployeeStatus.ACTIVE);
+    private final Snapshot engineer = new Snapshot(JobLevel.L2, "Software Engineer", "Engineering", EmployeeStatus.ACTIVE, new VariableTarget(1000));
 
     @Test
     void noDifferenceMeansNoEvents() {
@@ -18,7 +18,7 @@ class CareerChangesTest {
 
     @Test
     void reportsEachCareerChangeWithBeforeAndAfter() {
-        Snapshot promoted = new Snapshot(JobLevel.L3, "Senior Software Engineer", "Product", EmployeeStatus.ACTIVE);
+        Snapshot promoted = new Snapshot(JobLevel.L3, "Senior Software Engineer", "Product", EmployeeStatus.ACTIVE, new VariableTarget(1000));
 
         assertThat(CareerChanges.between(engineer, promoted)).containsExactly(
                 new Change(CareerEventType.LEVEL_CHANGED, "L2", "L3"),
@@ -27,8 +27,17 @@ class CareerChangesTest {
     }
 
     @Test
+    void reportsVariableTargetChangesAsPercentages() {
+        Snapshot higherTarget = new Snapshot(JobLevel.L2, "Software Engineer", "Engineering", EmployeeStatus.ACTIVE,
+                new VariableTarget(1250));
+
+        assertThat(CareerChanges.between(engineer, higherTarget))
+                .containsExactly(new Change(CareerEventType.VARIABLE_TARGET_CHANGED, "10%", "12.5%"));
+    }
+
+    @Test
     void reportsDeactivationAndReactivation() {
-        Snapshot inactive = new Snapshot(JobLevel.L2, "Software Engineer", "Engineering", EmployeeStatus.INACTIVE);
+        Snapshot inactive = new Snapshot(JobLevel.L2, "Software Engineer", "Engineering", EmployeeStatus.INACTIVE, new VariableTarget(1000));
 
         assertThat(CareerChanges.between(engineer, inactive)).containsExactly(new Change(CareerEventType.DEACTIVATED, null, null));
         assertThat(CareerChanges.between(inactive, engineer)).containsExactly(new Change(CareerEventType.REACTIVATED, null, null));
