@@ -1,4 +1,4 @@
-# Salary Management — Requirements (v0.2, draft)
+# Salary Management — Requirements (v0.3, draft)
 
 ## Goal
 Replace ACME's Excel-based salary tracking with a web app where the **HR Manager** can (1) maintain salary data for ~10,000 employees across countries and (2) quickly answer "how do we pay people?" questions without building spreadsheets.
@@ -7,7 +7,8 @@ Replace ACME's Excel-based salary tracking with a web app where the **HR Manager
 **HR Manager** at ACME: comfortable with Excel, not technical. Today they filter and pivot large sheets by hand. They need correct numbers fast, and to be confident that edits don't silently corrupt the data.
 
 ## Assumptions (to be confirmed with Incubyte)
-- One trusted HR Manager uses the system. Auth/RBAC is not required for this version.
+- Only HR staff use the system, all with the same permissions (single HR persona). They must sign in; salary data
+  is never visible anonymously.
 - Each employee has one **current base salary** in their **country's local currency**. Changes are effective-dated and kept as history.
 - Org-wide insights are shown in one **reporting currency (USD)** using a **fixed, dated exchange-rate table**, not live rates.
 - No existing Excel schema was provided, so I define the data model.
@@ -28,13 +29,16 @@ Replace ACME's Excel-based salary tracking with a web app where the **HR Manager
 6. **Outlier spotlight**: the system surfaces groups and people paid well below or above their band (e.g. "14 L3
    engineers in India are >15% below midpoint"), each linking to the filtered employee list.
 7. **CSV export** of any filtered employee view, so HR can keep using Excel for ad-hoc analysis.
-8. **Seed script**: 10,000 realistic employees across ~8 countries, departments, titles and levels, with country-specific salary ranges. Deterministic (fixed random seed), so tests and demos are reproducible.
-9. **Deployment and demo**: a single Docker image deployed publicly, plus a short demo video.
+8. **Sign-in and accountability**: HR staff sign in with email and password; every page and API call requires a
+   session. Salary changes and profile edits record **who** made them, shown in the employee's history. Basic
+   protection against password guessing (temporary lockout) and session hijacking (HttpOnly cookie, CSRF token).
+9. **Seed script**: 10,000 realistic employees across ~8 countries, departments, titles and levels, with country-specific salary ranges. Deterministic (fixed random seed), so tests and demos are reproducible.
+10. **Deployment and demo**: a single Docker image deployed publicly, plus a short demo video.
 
 ## Deliberately out of scope (and why)
 | Left out | Why |
 |---|---|
-| Authentication / roles | Single-persona brief. Adding auth well (SSO, roles) is a project in itself. Designed so Spring Security can be added later. |
+| Roles / fine-grained permissions, SSO | The brief has one persona (HR Manager), so every signed-in user is an HR admin. Spring Security is in place, so a read-only role or company SSO (OIDC) is an incremental change. |
 | Payroll processing (tax, payslips, payments) | The brief is managing and understanding salary data, not running payroll. |
 | Live FX rates | Adds an external dependency and non-determinism. A dated rate table keeps reports reproducible and testable. |
 | Bonus / equity / allowances | Base salary answers the core questions. The model leaves room for components later. |
@@ -54,12 +58,15 @@ Replace ACME's Excel-based salary tracking with a web app where the **HR Manager
 ## Experience
 The HR Manager should *enjoy* using it: keyboard-first (⌘K command palette to find anyone or jump anywhere), fast
 feedback (skeleton loaders, instant filters), and visuals that answer questions without reading tables (map, band
-bars, salary timeline). Light and dark themes.
+bars, salary timeline). A calm, light visual style inspired by Incubyte's design language (forest green, lime
+accent, serif headings, pill buttons); the product itself stays ACME's "Pay Atlas".
 
 ## Tech choices
 Java 21 · Spring Boot 4 · Spring Data JPA · **SQLite** · Flyway migrations · Angular 20 with Angular Material and Apache ECharts · Docker on Render.
 
 ## Changelog
+- **v0.3**: sign-in with session cookies, audit of who changed salaries and profiles, light-only theme.
+  Moved authentication from out of scope to in scope: anonymous access to salary data isn't acceptable even for a demo.
 - **v0.2**: added pay bands and compa-ratio, outlier spotlight, world payroll map, CSV export, concurrency rule and the
   experience goals. These turn "show me the numbers" into "tell me who is paid unfairly".
 - **v0.1**: initial scope and assumptions.
