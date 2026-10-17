@@ -1,4 +1,4 @@
-# Salary Management — Requirements (v0.3, draft)
+# Salary Management — Requirements (v0.4, draft)
 
 ## Goal
 Replace ACME's Excel-based salary tracking with a web app where the **HR Manager** can (1) maintain salary data for ~10,000 employees across countries and (2) quickly answer "how do we pay people?" questions without building spreadsheets.
@@ -16,7 +16,9 @@ Replace ACME's Excel-based salary tracking with a web app where the **HR Manager
 ## In scope
 1. **Employee directory**: server-side paginated table with search (name, email, employee code), filters (country, department, job title, level) and sorting.
 2. **Employee CRUD**: create, view, edit and deactivate employees, with validation (unique email/code, positive salary, currency must match country).
-3. **Salary changes with history**: record a change (new amount, effective date, reason, e.g. promotion or annual review). History is append-only, and the current salary is always the latest effective record.
+3. **Salary changes with history**: record a change (new amount, effective date, reason: annual review, promotion,
+   merit raise, market adjustment or correction). History is append-only, and the current salary is always the latest
+   effective record. ACME runs one review cycle: annual reviews take effect on 1 April.
 4. **Pay insights dashboard**:
    - Headcount and total annual payroll (USD), overall and per country.
    - Per country: min / max / average / median salary in local currency and USD.
@@ -32,16 +34,25 @@ Replace ACME's Excel-based salary tracking with a web app where the **HR Manager
 8. **Sign-in and accountability**: HR staff sign in with email and password; every page and API call requires a
    session. Salary changes and profile edits record **who** made them, shown in the employee's history. Basic
    protection against password guessing (temporary lockout) and session hijacking (HttpOnly cookie, CSRF token).
-9. **Seed script**: 10,000 realistic employees across ~8 countries, departments, titles and levels, with country-specific salary ranges. Deterministic (fixed random seed), so tests and demos are reproducible.
-10. **Deployment and demo**: a single Docker image deployed publicly, plus a short demo video.
+9. **Career history**: level, title, department and status changes are recorded with who made them and shown in the
+   employee's timeline next to salary changes. Raising someone's level prompts HR to record the matching raise.
+10. **Variable pay and bonuses**: each employee has a variable-pay target (% of base; defaults by role). Bonuses
+    (annual performance payout, spot bonus, sign-on, retention) are one-off awards in an append-only ledger. They don't
+    change base salary or compa-ratio (compa-ratio compares base pay to the band). Insights show bonuses paid in the
+    last 12 months and total cash compensation.
+11. **Bulk changes**: apply a % raise or a one-off bonus to a filtered group (e.g. India · Engineering · L3) with a
+    preview first (people affected, payroll cost in USD, band moves, who is skipped and why), then apply it in one
+    transaction under the same rules as single changes. A future date makes it a scheduled change.
+12. **Seed script**: 10,000 realistic employees across ~8 countries, departments, titles and levels, with country-specific salary ranges. Deterministic (fixed random seed), so tests and demos are reproducible.
+13. **Deployment and demo**: a single Docker image deployed publicly, plus a short demo video.
 
 ## Deliberately out of scope (and why)
 | Left out | Why |
 |---|---|
 | Roles / fine-grained permissions, SSO | The brief has one persona (HR Manager), so every signed-in user is an HR admin. Spring Security is in place, so a read-only role or company SSO (OIDC) is an incremental change. |
-| Payroll processing (tax, payslips, payments) | The brief is managing and understanding salary data, not running payroll. |
+| Payroll processing (tax, payslips, paying salaries and bonuses) | The brief is managing and understanding pay data, not running payroll. Pay Atlas records what was awarded; a payroll system pays it (e.g. fed by the CSV export). |
 | Live FX rates | Adds an external dependency and non-determinism. A dated rate table keeps reports reproducible and testable. |
-| Bonus / equity / allowances | Base salary answers the core questions. The model leaves room for components later. |
+| Equity, allowances, benefits | Base, variable pay and bonuses answer the brief's questions about how people are paid; the model leaves room for other components later. |
 | Excel / CSV bulk **import** | Valuable for migration, but needs mapping, validation reports and partial-failure handling. Export is in scope; import is the first candidate for the next iteration. |
 | Approval workflows, notifications | Multi-actor features with no second persona in the brief. |
 | AI natural-language querying | Dashboards and the outlier spotlight answer the stated questions predictably. Could be layered on the same aggregate API later. |
@@ -65,6 +76,8 @@ accent, serif headings, pill buttons); the product itself stays ACME's "Pay Atla
 Java 21 · Spring Boot 4 · Spring Data JPA · **SQLite** · Flyway migrations · Angular 20 with Angular Material and Apache ECharts · Docker on Render.
 
 ## Changelog
+- **v0.4**: one 1 April review cycle, merit raises, career history, variable-pay targets, bonus ledger, bulk raise or
+  bonus with preview. Driven by HR practice: hikes and bonuses for good work, and changes applied to whole groups.
 - **v0.3**: sign-in with session cookies, audit of who changed salaries and profiles, light-only theme.
   Moved authentication from out of scope to in scope: anonymous access to salary data isn't acceptable even for a demo.
 - **v0.2**: added pay bands and compa-ratio, outlier spotlight, world payroll map, CSV export, concurrency rule and the
