@@ -34,7 +34,8 @@ export const problemInterceptor: HttpInterceptorFn = (req, next) => {
   const snackBar = inject(MatSnackBar);
   return next(req).pipe(
     catchError((error: unknown) => {
-      if (error instanceof HttpErrorResponse && !req.context.get(HANDLES_ERRORS)) {
+      // 401 is handled by the session interceptor (redirect to sign-in), not shown as an error toast.
+      if (error instanceof HttpErrorResponse && error.status !== 401 && !req.context.get(HANDLES_ERRORS)) {
         snackBar.open(problemMessage(error), 'Dismiss', { duration: 6000, panelClass: 'pa-snack-error' });
       }
       return throwError(() => error);

@@ -1,25 +1,35 @@
 import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter, map } from 'rxjs';
+import { filter, map, of, switchMap } from 'rxjs';
 
 import { MetaApi } from './core/api/meta-api';
+import { AuthService } from './core/auth/auth';
 
 interface PageHeading {
   heading: string;
   subheading: string;
+  /** Full-screen page without navigation (login). */
+  bare: boolean;
 }
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, MatTooltipModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, MatMenuModule, MatTooltipModule],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly meta = toSignal(inject(MetaApi).meta$);
+  protected readonly auth = inject(AuthService);
+  private readonly metaApi = inject(MetaApi);
+
+  /** Only once signed in: before that the API answers 401, and a failed shared request would stay failed. */
+  protected readonly meta = toSignal(
+    toObservable(this.auth.signedIn).pipe(switchMap((signedIn) => (signedIn ? this.metaApi.meta$ : of(undefined)))),
+  );
 
   private readonly route = inject(ActivatedRoute);
 
@@ -37,4 +47,8 @@ export class App {
     ),
     { initialValue: {} as Partial<PageHeading> },
   );
+
+  protected initials(name: string): string {
+    return name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase();
+  }
 }

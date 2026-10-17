@@ -1,3 +1,6 @@
+@if (page().bare) {
+  <router-outlet />
+} @else {
 <div class="shell">
   <nav class="rail" aria-label="Main navigation">
     <a class="brand" routerLink="/insights" aria-label="Pay Atlas home">
@@ -25,6 +28,20 @@
 
     <span class="spacer"></span>
 
+    @if (auth.user(); as user) {
+      <button type="button" class="nav-item user" [matMenuTriggerFor]="userMenu" [attr.aria-label]="'Account: ' + user.fullName"
+              [matTooltip]="user.fullName" matTooltipPosition="right">
+        <span class="user-avatar">{{ initials(user.fullName) }}</span>
+        <span class="label">Account</span>
+      </button>
+      <mat-menu #userMenu="matMenu" xPosition="after" yPosition="above">
+        <div class="menu-user">
+          <strong>{{ user.fullName }}</strong>
+          <span class="muted">{{ user.email }}</span>
+        </div>
+        <button mat-menu-item type="button" (click)="auth.logout()"><mat-icon>logout</mat-icon> Sign out</button>
+      </mat-menu>
+    }
   </nav>
 
   <div class="main">
@@ -48,3 +65,4 @@
     <footer class="credit muted">Pay Atlas · built by Sachin Yadav for the Incubyte assessment</footer>
   </div>
 </div>
+}

@@ -109,6 +109,7 @@
               <span class="badge">{{ h.status === 'CURRENT' ? 'Current' : 'Scheduled' }}</span>
             }
             @if (h.note) { <span class="note muted">“{{ h.note }}”</span> }
+            <span class="by muted">{{ h.recordedBy ? 'by ' + h.recordedBy : 'imported' }}</span>
           </li>
         }
       </ol>
@@ -119,7 +120,7 @@
         <div><dt>Email</dt><dd>{{ e.email }}</dd></div>
         <div><dt>Hired</dt><dd>{{ e.hireDate | date: 'd MMM y' }} <span class="muted">· {{ tenure() }}</span></dd></div>
         <div><dt>Country</dt><dd>{{ e.countryName }} <span class="muted">· paid in {{ e.salary.currency }}</span></dd></div>
-        <div><dt>Last updated</dt><dd>{{ e.updatedAt | date: 'd MMM y, HH:mm' }}</dd></div>
+        <div><dt>Last updated</dt><dd>{{ e.updatedAt | date: 'd MMM y, HH:mm' }}@if (e.updatedBy) { <span class="muted"> · by {{ e.updatedBy }}</span> }</dd></div>
       </dl>
     </section>
   } @else if (state().error) {

@@ -25,11 +25,11 @@ const ADA: EmployeeDetail = {
   jobTitle: 'Software Engineer', level: 'L3', status: 'ACTIVE', hireDate: '2024-01-15',
   salary: gbp(8_000_000), salaryUsd: { minorUnits: 10_160_000, currency: 'USD', amount: '101600.00' },
   payBand: { min: gbp(4_760_000), mid: gbp(5_950_000), max: gbp(7_140_000) }, compaRatio: 1.34, bandPosition: 'ABOVE',
-  version: 3, createdAt: '2024-01-15T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z',
+  version: 3, createdAt: '2024-01-15T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', updatedBy: null,
 };
 
 const HISTORY: SalaryHistoryItem[] = [
-  { id: 1, amount: gbp(8_000_000), effectiveDate: '2024-01-15', reason: 'HIRE', note: null, status: 'CURRENT', changePercent: null },
+  { id: 1, amount: gbp(8_000_000), effectiveDate: '2024-01-15', reason: 'HIRE', note: null, status: 'CURRENT', changePercent: null, recordedBy: null },
 ];
 
 describe('EmployeeDrawer', () => {

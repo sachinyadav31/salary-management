@@ -150,6 +150,8 @@ export interface EmployeeDetail extends EmployeeSummary {
   version: number;
   createdAt: string;
   updatedAt: string;
+  /** Who last edited the employee; null if never edited by a person (seed data). */
+  updatedBy: string | null;
 }
 
 export type SalaryChangeReason = 'HIRE' | 'PROMOTION' | 'ANNUAL_REVIEW' | 'MARKET_ADJUSTMENT' | 'CORRECTION';
@@ -163,6 +165,8 @@ export interface SalaryHistoryItem {
   note: string | null;
   status: HistoryStatus;
   changePercent: number | null;
+  /** Who recorded the change; null for system-generated history (seed data). */
+  recordedBy: string | null;
 }
 
 export interface UpdateEmployeeRequest {

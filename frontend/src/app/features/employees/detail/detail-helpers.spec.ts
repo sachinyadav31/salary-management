@@ -72,7 +72,7 @@ describe('profileChanges', () => {
 describe('timelineOption', () => {
   const palette = { accent: 'cyan', surface: 'navy', border: 'b', text: 't', muted: 'm' } as ChartPalette;
   const item = (id: number, date: string, minor: number, status: SalaryHistoryItem['status']): SalaryHistoryItem =>
-    ({ id, amount: gbp(minor), effectiveDate: date, reason: 'ANNUAL_REVIEW', note: null, status, changePercent: null });
+    ({ id, amount: gbp(minor), effectiveDate: date, reason: 'ANNUAL_REVIEW', note: null, status, changePercent: null, recordedBy: null });
 
   it('draws effective pay solid and scheduled changes dashed, oldest first', () => {
     const history = [item(3, '2027-04-01', 9_000_000, 'SCHEDULED'), item(2, '2025-04-01', 8_800_000, 'CURRENT'),

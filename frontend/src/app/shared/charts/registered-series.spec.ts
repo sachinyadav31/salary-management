@@ -13,7 +13,7 @@ describe('registered ECharts series', () => {
   const options = [
     mapOption([], null, palette),
     distributionOption({ asOf: '', currency: 'USD', headcount: 0, buckets: [], stats: null }, palette),
-    timelineOption([{ id: 1, amount: money, effectiveDate: '2024-01-01', reason: 'HIRE', note: null, status: 'CURRENT', changePercent: null }], palette),
+    timelineOption([{ id: 1, amount: money, effectiveDate: '2024-01-01', reason: 'HIRE', note: null, status: 'CURRENT', changePercent: null, recordedBy: null }], palette),
   ];
 
   const registry = (echarts as unknown as { ChartView: { getClass: (type: string) => unknown } }).ChartView;

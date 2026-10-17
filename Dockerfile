@@ -32,8 +32,10 @@ USER app
 
 # SQLite lives in /data. On Render's free tier the disk is ephemeral: the demo re-seeds 10k employees on start.
 # JVM sized from the container limit (512 MB on Render free); SerialGC has the smallest footprint.
+# Session cookie is Secure (HTTPS only) in the image; browsers still accept it on http://localhost.
 ENV SALARY_DB_PATH=/data/salary.db \
     SEED_ENABLED=true \
+    SESSION_COOKIE_SECURE=true \
     PORT=8080 \
     JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError -Xss512k"
 EXPOSE 8080

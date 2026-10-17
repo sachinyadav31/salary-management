@@ -265,3 +265,15 @@ For each phase: plan → review the plan → implement test-first → run tests 
      which broke a later test in the cached context. The integration test now uses the real cookie-and-header flow
      for every write, which is also closer to what the browser does.
 - Single persona per the brief: every signed-in user is an HR admin; a read-only role would be a small addition.
+
+### Phase 16c — Frontend authentication
+- `AuthService` mirrors who is signed in; the session itself is an HttpOnly cookie JavaScript never sees (verified in
+  the browser: `document.cookie` has XSRF-TOKEN but not JSESSIONID).
+- An app initializer loads the session before routing, which also issues the CSRF cookie. Guards send signed-out
+  visitors to `/login?returnUrl=…`, and a 401 anywhere means "session expired", so the user signs in and returns.
+- Avoided a subtle trap: the shell's shared, cached `/api/meta` request would fail with 401 before login and stay
+  failed, so it's only requested once signed in.
+- `returnUrl` only accepts same-app paths (an open-redirect test covers `//evil.example`).
+- Verified in the browser: deep link → login → back to the drawer; a salary change from the UI recorded
+  "by Priya Sharma"; sign-out kills the server session (API 401, Back button guarded); restarting the backend while
+  signed in leads to "Your session expired" with no error toasts.
