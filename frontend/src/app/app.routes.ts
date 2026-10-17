@@ -1,3 +1,18 @@
 import { Routes } from '@angular/router';
 
-export const routes: Routes = [];
+export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'insights' },
+  {
+    path: 'insights',
+    title: 'Insights · Pay Atlas',
+    data: { heading: 'Pay insights', subheading: 'How ACME pays its people, across every country' },
+    loadComponent: () => import('./features/insights/insights-page').then((m) => m.InsightsPage),
+  },
+  {
+    path: 'employees',
+    title: 'Employees · Pay Atlas',
+    data: { heading: 'Employees', subheading: 'Search, filter and compare pay against bands' },
+    loadComponent: () => import('./features/employees/employees-page').then((m) => m.EmployeesPage),
+  },
+  { path: '**', redirectTo: 'insights' },
+];

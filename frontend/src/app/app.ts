@@ -1,12 +1,42 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
+
+import { MetaApi } from './core/api/meta-api';
+import { ThemeService } from './core/theme';
+
+interface PageHeading {
+  heading: string;
+  subheading: string;
+}
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, MatTooltipModule],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
 export class App {
-  protected readonly title = signal('frontend');
+  protected readonly theme = inject(ThemeService);
+  protected readonly meta = toSignal(inject(MetaApi).meta$);
+
+  private readonly route = inject(ActivatedRoute);
+
+  /** Heading of the deepest active route, from its `data`. */
+  protected readonly page = toSignal(
+    inject(Router).events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => {
+        let route = this.route.snapshot;
+        while (route.firstChild) {
+          route = route.firstChild;
+        }
+        return route.data as Partial<PageHeading>;
+      }),
+    ),
+    { initialValue: {} as Partial<PageHeading> },
+  );
 }

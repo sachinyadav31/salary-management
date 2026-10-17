@@ -135,3 +135,14 @@ For each phase: plan → review the plan → implement test-first → run tests 
   3. (Not predicted) `InsightsController` called JPA repositories to validate filters. Added `ReferenceDataService`.
 - Lesson for the AI workflow: plausible-looking generated code still drifts architecturally; executable rules catch
   that drift on every build, not just at code review.
+
+### Phase 12a — UI shell and theme ("Pay Atlas")
+- Dark-first M3 theme: every colour is a CSS `light-dark()` pair, so switching `color-scheme` flips the whole app
+  (Material included) without duplicate theme CSS. Band colours (coral below / teal within / violet above) are
+  global tokens so they mean the same thing on every screen.
+- Fonts (Inter, Space Grotesk) and Material Symbols are self-hosted via npm instead of Google CDNs: no third-party
+  requests, works offline.
+- Typed API models mirror the backend DTOs; one HTTP interceptor turns RFC 7807 problem details into snackbars.
+- Theme choice is persisted, with storage access wrapped in try/catch (private mode can't break the app).
+- Verified in the built-in browser with the backend running behind the dev proxy (FX date comes from `/api/meta`).
+- Small test fix: asserted on `.label` text, not the icon ligature + label `textContent`.
