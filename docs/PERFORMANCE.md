@@ -59,3 +59,12 @@ employee's previous USD salary on the very next request.
 
 Rows stream from the JDBC cursor to the response (`Transfer-Encoding: chunked`), so memory stays flat regardless
 of size. Trade-off: SQLite's single pooled connection is held during the export, so other requests wait ~0.2 s at worst.
+
+## Frontend bundle
+| Chunk | Raw | Transferred (compressed) |
+|---|---|---|
+| Initial (shell, router, Material core + overlay) | 514 kB | 131 kB |
+| Employees page (lazy) | 234 kB | 45 kB |
+
+The initial-bundle warning budget was raised from Angular's default 500 kB to 600 kB: the overage is Material's
+overlay (tooltips, error snackbar) that the shell needs on every page. The budget remains as a regression tripwire.

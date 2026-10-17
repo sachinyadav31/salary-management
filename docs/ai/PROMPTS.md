@@ -146,3 +146,17 @@ For each phase: plan → review the plan → implement test-first → run tests 
 - Theme choice is persisted, with storage access wrapped in try/catch (private mode can't break the app).
 - Verified in the built-in browser with the backend running behind the dev proxy (FX date comes from `/api/meta`).
 - Small test fix: asserted on `.label` text, not the icon ligature + label `textContent`.
+
+### Phases 12b–12c — Shared UI and employee directory
+- Every visual piece is a pure function plus a thin component: `formatMoney` (per-currency locale, e.g. lakh grouping
+  for INR), `countryFlag`, `bandBarGeometry` (band plus 25% padding so outliers sit visibly outside). All are unit
+  tested, and screen-reader labels describe what the colour shows.
+- The URL is the state: filters/sort/page live in query params, parsed tolerantly. Backend filter names were reused
+  as URL param names, so outlier cards deep-link with zero mapping code (tested).
+- `switchMap` cancels stale requests; the previous page stays visible (dimmed) while the next loads; the search box
+  is debounced and uses `replaceUrl` so typing doesn't flood history.
+- Verified in the built-in browser on the 10k dataset: quick filter + sort update the URL; the outlier deep link
+  returns exactly 35 people like the card; no horizontal page scroll on a 375 px phone. Fixed wrapped action buttons
+  on phones found during that check.
+- Production build exceeded the 500 kB initial budget by 14 kB (131 kB transferred); raised the warning budget with a
+  documented reason rather than contorting the code.

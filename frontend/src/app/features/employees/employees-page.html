@@ -1,0 +1,170 @@
+<section class="filters" aria-label="Filters">
+  <mat-form-field class="search" appearance="outline" subscriptSizing="dynamic">
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput [formControl]="searchControl" placeholder="Search name, email or code" aria-label="Search employees" />
+    @if (searchControl.value) {
+      <button matSuffix mat-icon-button type="button" aria-label="Clear search" (click)="searchControl.setValue('')">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Country</mat-label>
+    <mat-select multiple [value]="query().countries" (selectionChange)="update({ countries: $event.value })">
+      @for (country of meta()?.countries ?? []; track country.code) {
+        <mat-option [value]="country.code">{{ flag(country.code) }} {{ country.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Department</mat-label>
+    <mat-select multiple [value]="query().departments" (selectionChange)="update({ departments: $event.value })">
+      @for (department of meta()?.departments ?? []; track department.id) {
+        <mat-option [value]="department.id">{{ department.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="narrow">
+    <mat-label>Level</mat-label>
+    <mat-select multiple [value]="query().levels" (selectionChange)="update({ levels: $event.value })">
+      @for (level of meta()?.levels ?? []; track level) {
+        <mat-option [value]="level">{{ level }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="narrow">
+    <mat-label>Status</mat-label>
+    <mat-select [value]="query().status" (selectionChange)="update({ status: $event.value })">
+      <mat-option value="ACTIVE">Active</mat-option>
+      <mat-option value="INACTIVE">Inactive</mat-option>
+      <mat-option value="ALL">All</mat-option>
+    </mat-select>
+  </mat-form-field>
+</section>
+
+<section class="toolbar">
+  <div class="quick" role="group" aria-label="Pay position">
+    @for (quick of quickFilters; track quick.id) {
+      <button type="button" class="quick-chip" [class]="'quick-chip ' + quick.id" [class.active]="activeQuickFilter() === quick.id"
+              [attr.aria-pressed]="activeQuickFilter() === quick.id" (click)="update(quick.patch)">
+        {{ quick.label }}
+      </button>
+    }
+    @if (query().title; as title) {
+      <button type="button" class="quick-chip removable" (click)="update({ title: null })" [attr.aria-label]="'Remove title filter ' + title">
+        Title: {{ title }} <mat-icon>close</mat-icon>
+      </button>
+    }
+  </div>
+
+  <div class="summary">
+    <span class="count num" aria-live="polite">
+      @if (state().page) {
+        <strong>{{ total() | number }}</strong> {{ total() === 1 ? 'employee' : 'employees' }}
+      }
+    </span>
+    @if (filtered()) {
+      <button mat-button type="button" (click)="clearFilters()">Clear filters</button>
+    }
+    <a mat-stroked-button [href]="exportUrl()" download matTooltip="Download these {{ total() | number }} rows as CSV for Excel">
+      <mat-icon>download</mat-icon> Export CSV
+    </a>
+  </div>
+</section>
+
+<div class="table-card" [class.refreshing]="state().loading && state().page">
+  @if (state().loading && state().page) {
+    <mat-progress-bar mode="indeterminate" class="progress" />
+  }
+
+  @if (state().page) {
+    <div class="scroll">
+      <table mat-table [dataSource]="rows()" [trackBy]="trackById" matSort matSortDisableClear
+             [matSortActive]="sortField()" [matSortDirection]="sortDirection()" (matSortChange)="onSort($event)">
+
+        <ng-container matColumnDef="employee">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="name">Employee</th>
+          <td mat-cell *matCellDef="let e">
+            <div class="person">
+              <span class="avatar" [style.--hue]="avatarHue(e)" aria-hidden="true">{{ initials(e) }}</span>
+              <div>
+                <div class="name">{{ e.fullName }}</div>
+                <div class="sub muted num">{{ e.employeeCode }} · {{ e.email }}</div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="country">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Country</th>
+          <td mat-cell *matCellDef="let e"><span class="flag" aria-hidden="true">{{ flag(e.countryCode) }}</span> {{ e.countryName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="jobTitle">Role</th>
+          <td mat-cell *matCellDef="let e">
+            <div>{{ e.jobTitle }}</div>
+            <div class="sub muted">{{ e.level }} · {{ e.department }}</div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="salary">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="salaryUsd" arrowPosition="before" class="right">Salary</th>
+          <td mat-cell *matCellDef="let e" class="right num">
+            <div class="amount">{{ e.salary | money }}</div>
+            @if (e.salary.currency !== 'USD') {
+              <div class="sub muted">≈ {{ e.salaryUsd | money }}</div>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="band">
+          <th mat-header-cell *matHeaderCellDef>Pay band</th>
+          <td mat-cell *matCellDef="let e"><pa-band-bar [salary]="e.salary" [band]="e.payBand" [position]="e.bandPosition" /></td>
+        </ng-container>
+
+        <ng-container matColumnDef="compaRatio">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header matTooltip="Salary ÷ band midpoint">Compa</th>
+          <td mat-cell *matCellDef="let e"><pa-compa-badge [compa]="e.compaRatio" [position]="e.bandPosition" /></td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let e">
+            <span class="status" [class.inactive]="e.status === 'INACTIVE'">{{ e.status === 'ACTIVE' ? 'Active' : 'Inactive' }}</span>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+
+    @if (rows().length === 0) {
+      <div class="empty">
+        <mat-icon>person_search</mat-icon>
+        <p class="display">No one matches these filters</p>
+        <button mat-flat-button type="button" (click)="clearFilters()">Clear filters</button>
+      </div>
+    }
+
+    <mat-paginator [length]="total()" [pageIndex]="query().page" [pageSize]="query().size" [pageSizeOptions]="pageSizes"
+                   (page)="onPage($event)" showFirstLastButtons aria-label="Pages" />
+  } @else if (state().failed) {
+    <div class="empty">
+      <mat-icon>cloud_off</mat-icon>
+      <p class="display">Couldn't load employees</p>
+      <button mat-flat-button type="button" (click)="update({}, { keepPage: true })">Try again</button>
+    </div>
+  } @else {
+    <div class="skeleton" aria-busy="true" aria-label="Loading employees">
+      @for (row of skeletonRows; track row) {
+        <div class="skeleton-row"><span></span><span></span><span></span><span></span></div>
+      }
+    </div>
+  }
+</div>
