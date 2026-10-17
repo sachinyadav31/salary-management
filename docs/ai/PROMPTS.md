@@ -226,3 +226,16 @@ For each phase: plan → review the plan → implement test-first → run tests 
   NG0950). They read a snapshot synced by an effect instead.
 - Found while checking in the browser: a field hint crowding the next row's floating label in the narrow drawer
   (added row spacing). A test-setup gap (router input binding missing in the test, unlike the app) was fixed in the test.
+
+### Phase 15 — Docker, CI, Render
+- Spring Boot serves the Angular build (SPA fallback for deep links; unknown `/api/**` and missing files stay 404;
+  hashed bundles cached for a year, `index.html` revalidated; gzip).
+- Multi-stage Dockerfile; the backend stage uses the official `gradle:9.8.1-jdk21` image pinned to the wrapper's
+  version, because the JVM on this machine's network couldn't download the Gradle distribution (same issue as day one).
+  Verified under Render's limits before pushing: ready in ~40 s at 0.5 CPU, 257 of 512 MB.
+- CI (GitHub Actions): backend tests, frontend tests + production build, Docker image build. Green on first run.
+- **Bug found only on the live site:** all fonts under `/media/` returned 404, so icons showed as text ("grc", "lig").
+  Cause: for a `/media/**` handler Spring resolves only the `**` part against the location, so it looked in
+  `static/` instead of `static/media/`. My test covered a `.js` bundle but no font, and my local Docker smoke test
+  didn't request one. Fixed, added a font regression test, and re-verified by fetching the real fonts from a
+  rebuilt image. Lesson: smoke-test every asset type the page actually loads, not just the HTML and the API.

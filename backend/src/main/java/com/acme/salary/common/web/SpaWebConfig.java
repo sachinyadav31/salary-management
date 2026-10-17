@@ -29,9 +29,15 @@ public class SpaWebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Hashed build output (main-ABC123.js, chunk-XYZ.js, styles-….css, fonts in media/): immutable.
-        registry.addResourceHandler("/*.js", "/*.css", "/media/**")
+        CacheControl immutable = CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable();
+        registry.addResourceHandler("/*.js", "/*.css")
                 .addResourceLocations(STATIC)
-                .setCacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable());
+                .setCacheControl(immutable);
+        // A "/dir/**" pattern resolves only the "**" part against the location, so the location must include
+        // the directory itself (static/media/, not static/).
+        registry.addResourceHandler("/media/**")
+                .addResourceLocations(STATIC + "media/")
+                .setCacheControl(immutable);
 
         // Everything else, including the SPA fallback to index.html: always revalidate.
         registry.addResourceHandler("/**")
