@@ -15,15 +15,23 @@ The demo data is synthetic and resets on every deploy.
 
 ## What it does
 
-- **Pay insights**: headcount, payroll (USD), median salary and how many people are paid within their band; a world
-  payroll map; per-country and per-title statistics; salary distributions in local currency.
-- **Outlier spotlight**: ranked findings such as *"35 of 123 Operations Analysts in India are paid below their pay
-  band"*, each linking to exactly those people.
+- **Pay insights**: headcount, payroll (USD), total target cash (base + variable target), bonuses paid in the last
+  12 months, median salary and how many people are paid within their band; a world payroll map; per-country and
+  per-title statistics; salary distributions in local currency.
+- **Outlier spotlight**: ranked findings such as *"In India, 35 of 104 people in Operations Analyst roles are paid
+  below their pay band"*, each linking to exactly those people.
 - **Employee directory**: search, filters (country, department, level, status, band position, compa-ratio), sorting
   and paging done in the database; every view is a shareable URL; export the filtered list to CSV.
-- **Employee detail**: pay band bar and compa-ratio, salary timeline, history with who recorded each change.
-- **Salary changes**: immediate, back-dated or scheduled (applied automatically on their date), with a live preview
-  of the % change and new compa-ratio; corrections must explain why.
+- **Employee detail**: pay band bar and compa-ratio, base + variable target + bonuses, and one timeline of salary
+  changes, career events (promotions, title/department moves, deactivation) and bonuses, each with who recorded it.
+- **Salary changes**: merit raises, annual reviews (1 April cycle), promotions, market adjustments and corrections;
+  immediate, back-dated or scheduled (applied automatically on their date), with a live preview of the % change and
+  new compa-ratio. After a level change the drawer offers to record the promotion raise.
+- **Variable pay and bonuses**: a variable-pay target per person (% of base, role defaults), and an append-only bonus
+  ledger (performance payout, spot, sign-on, retention).
+- **Bulk changes**: give everyone the directory filters select (e.g. India · Engineering · L3) a raise or a one-off
+  bonus. Preview first (people affected, payroll impact in USD, band moves, who is skipped and why), then apply in
+  one transaction; a double click can't apply it twice.
 - **Safe editing**: optimistic locking. If a colleague saved first, you see what they changed and your input is kept.
 - **Sign-in**: session cookie with CSRF protection, lockout after repeated failures, and an audit trail of who changed
   what.
@@ -73,14 +81,14 @@ cd backend && ./gradlew test
 cd frontend && npm test
 ```
 
-~170 backend tests (domain unit tests, web slices, integration tests against SQLite and the real security chain,
-and ArchUnit architecture rules) and ~70 frontend tests (Vitest). CI runs both, plus the production build and the
+~210 backend tests (domain unit tests, web slices, integration tests against SQLite and the real security chain,
+and ArchUnit architecture rules) and ~80 frontend tests (Vitest). CI runs both, plus the production build and the
 Docker image, on every push.
 
 ## Project layout
 
 ```
-backend/    Spring Boot app, packaged by feature: employee, salary, payband, insights, reference, auth, meta, seed, common
+backend/    Spring Boot app, packaged by feature: employee, salary, bonus, bulk, payband, insights, reference, auth, meta, seed, common
 frontend/   Angular app: core (API, auth), shared (UI pieces, charts), features (insights, employees, auth)
 docs/       Requirements, design, decisions, performance, deployment, AI workflow log
 Dockerfile  Multi-stage build: Angular → Spring Boot jar → small JRE image

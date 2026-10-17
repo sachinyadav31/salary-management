@@ -286,3 +286,40 @@ For each phase: plan → review the plan → implement test-first → run tests 
   DECISIONS (19 decisions with alternatives and trade-offs), written after the code so they describe what exists.
 - Caught while writing: the image's `Secure` session cookie may not be stored by Safari on plain-HTTP localhost, so
   the local `docker run` instructions pass `SESSION_COOKIE_SECURE=false`.
+
+### Phase 18 — Review feedback: realistic pay cycles
+- Reviewing the app as the HR user surfaced that seeded raises fell on random dates. Real companies review pay once a
+  year, so the seed now uses a **1 April review cycle** (10 cycles since 2017, ~85% get a raise, new joiners wait at
+  least 6 months), with promotions and market adjustments off-cycle and performance bonuses paid on 1 April.
+- Requirements updated first (v0.4): career history, variable pay and bonuses, and bulk changes in scope; payroll runs
+  (actually paying 10,000 people on payday) explicitly out of scope.
+
+### Phase 19 — Career history
+- Profile edits now record **career events** (level, title, department, variable-target changes, deactivation and
+  reactivation) computed by a pure `CareerChanges.between(before, after)`; the drawer merges salary changes, career
+  events and bonuses into one timeline. A level change offers "Record raise" with the reason pre-selected.
+- Tests caught:
+  1. With a fixed test clock every event shares one instant, so "newest first" came out reversed; ordering is now
+     `occurred_at desc, id asc` and the test asserts recording order.
+  2. Setting `editedBy` *after* `save` dirtied the brand-new entity and bumped it to version 1, so the next edit with
+     version 0 got a 409 in the integration test. Now everything is set before the first save.
+- Process slip: one commit went in with a failing test (a `;` instead of `&&` in the command chain). Caught on the
+  next run, fixed, and amended before pushing.
+
+### Phase 20 — Merit raises, variable pay and bonuses
+- Prompted by "some employees get a bonus and a raise if the owner is happy with their work" and "consider variable
+  pay". Designed as three separate things (DECISIONS 20–21): a MERIT reason, a variable-pay target per person, and an
+  append-only bonus ledger, with totals (target cash, bonuses in the last 12 months) on the dashboard.
+
+### Phase 21 — Bulk raises and bonuses
+- Prompted by "do I have to handle the salaries of 10,000 employees on the same day, or bulk things?". Answer: paying
+  salaries is payroll (out of scope); applying a raise or bonus to a group is HR's job, so it's in.
+- Design (DECISIONS 22): preview → apply in one transaction; a pure planner that reuses the single-change rules;
+  skipped people grouped by reason; idempotent request id; the preview is never trusted at apply time.
+- Verified in the browser: India · Engineering · L3 (239 people) +6% → +$257.2K a year; running it again skipped all
+  239 ("a change already exists on that date"). Whole company: apply 9,708 raises in ~0.3 s, duplicate submit 8 ms.
+- UX fixes found by using it, not by tests: the Preview button sat below the fold on a laptop-height dialog (moved to
+  the action bar) and focus landed on the toggle instead of the % field.
+- **Caught while updating the docs:** the local dashboard showed $0 variable pay and $0 bonuses. The local SQLite
+  file predated the new seed (the seeder skips a non-empty database), so it never got the new data. Production is
+  unaffected (fresh disk on every deploy), but it was a reminder to re-measure demo numbers from a clean database.

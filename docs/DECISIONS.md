@@ -14,7 +14,7 @@ The goal throughout was the brief's "not the most complex system, but good engin
 - **Trade-off**: scaling is vertical. Boundaries are already enforced, so a feature could be extracted later.
 
 ### 2. SQLite with Flyway
-- **Decision**: SQLite file database; schema owned by versioned Flyway migrations (V1–V6), never edited after commit.
+- **Decision**: SQLite file database; schema owned by versioned Flyway migrations (V1–V10), never edited after commit.
 - **Alternatives**: PostgreSQL, H2.
 - **Why**: the brief suggests SQLite; zero setup; fast enough (directory queries 6–35 ms on 10k rows).
 - **Trade-off**: a single writer and no network access, fine for one HR user on one instance. Moving to Postgres means
@@ -144,5 +144,36 @@ The goal throughout was the brief's "not the most complex system, but good engin
   demo don't survive a restart. Production would use a persistent disk or Postgres.
 
 ### 19. Tests as the safety net for AI-assisted work
-- ~170 backend tests (unit, slice, integration, architecture) and ~70 frontend tests. The AI-assisted workflow and
+- ~210 backend tests (unit, slice, integration, architecture) and ~80 frontend tests. The AI-assisted workflow and
   every bug the tests or live checks caught are logged in [`ai/PROMPTS.md`](ai/PROMPTS.md).
+
+## Compensation (added after the first review)
+
+### 20. Pay = base + variable target + bonus ledger
+- **Decision**: base salary keeps its effective-dated history; a **variable-pay target** is a % of base stored per
+  person in basis points (role defaults: Sales 20%, L1–L3 10%, L4 12%, L5 15%, L6 20%); **bonuses** are an
+  append-only ledger (performance payout, spot, sign-on, retention). A **merit** raise is its own reason, so "raise
+  because of great work" is distinguishable from the yearly review or a market fix.
+- **Alternatives**: one "total compensation" number; bonuses as salary records.
+- **Why**: HR asks different questions of each part ("who is under band?" is about base; "what did we pay out?" is
+  about bonuses). Bonuses never move base salary or compa-ratio.
+- **Out of scope**: payroll runs (paying people), equity, allowances and benefits.
+
+### 21. Bonuses don't need an optimistic-lock version
+- **Decision**: awarding a bonus inserts a ledger row and doesn't modify the employee, so it doesn't check or bump
+  the employee's version.
+- **Why**: two HR people awarding bonuses at the same time can't overwrite each other; both awards are real. Locking
+  would only create false conflicts. Career events, in contrast, come from profile edits, which are versioned.
+
+### 22. Bulk changes: preview, then one idempotent transaction
+- **Decision**: a raise or bonus for everyone the directory filters select. The pure `BulkPlanner` reuses
+  `SalaryHistory.checkCanAdd` and `BonusRules.check`, so a bulk change can't do anything a single change couldn't;
+  people who don't qualify are skipped with a reason, not failed. Apply re-plans inside its transaction, writes JDBC
+  batches, bumps each raised employee's version, and records the client's request id so a double click or retry
+  applies once. Amounts round half-up to whole currency units.
+- **Alternatives**: a background job with progress; applying the preview's numbers as sent by the client.
+- **Why**: 10k people take ~0.3 s in one transaction, so a job queue would be complexity without benefit;
+  all-or-nothing is easier to reason about than a half-applied raise. Never trusting the preview means a change made
+  between preview and apply is respected.
+- **Trade-off**: SQLite has one writer, so other writes wait during the ~0.3 s. Promotions, corrections and
+  sign-on bonuses stay per-person decisions and are rejected in bulk.

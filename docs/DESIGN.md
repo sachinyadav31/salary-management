@@ -16,14 +16,14 @@ flowchart LR
         SEC["Security filter chain<br/>session cookie · CSRF · 401/403 problem JSON"]
         STATIC["Static SPA + fallback<br/>(hashed assets cached 1 year)"]
         API["REST controllers (/api)"]
-        CMD["Write side<br/>EmployeeService · SalaryService<br/>(JPA entities, domain rules)"]
+        CMD["Write side<br/>EmployeeService · SalaryService · BonusService · BulkService<br/>(JPA entities / JDBC batches, domain rules)"]
         QRY["Read side<br/>SQL query repositories<br/>(directory, pay bands, CSV stream)"]
         INS["Insights<br/>snapshot cache + pure calculators"]
         JOB["SalaryRolloverJob<br/>(startup + daily)"]
         EVT(("Domain events<br/>EmployeeHired · WorkforceChanged"))
     end
 
-    DB[("SQLite<br/>Flyway migrations V1–V6<br/>employee_pay view")]
+    DB[("SQLite<br/>Flyway migrations V1–V10<br/>employee_pay view")]
 
     SPA -- "HTTPS, same origin" --> SEC
     SEC --> STATIC
@@ -48,8 +48,10 @@ through services; reads use SQL query repositories that select only the needed c
 
 | Package | Responsibility |
 |---|---|
-| `employee` | Employee aggregate, create/update/deactivate, directory read model, CSV export |
+| `employee` | Employee aggregate, create/update/deactivate, career events, variable-pay target, directory read model, CSV export |
 | `salary` | Effective-dated, append-only salary history; rules in pure `SalaryHistory`; rollover job |
+| `bonus` | Append-only bonus ledger (performance, spot, sign-on, retention); rules in pure `BonusRules` |
+| `bulk` | Raise or bonus for a filtered group: pure `BulkPlanner` (reuses the salary and bonus rules), preview + idempotent one-transaction apply |
 | `payband` | Pay bands per country × level, compa-ratio and band position (SQL view `employee_pay`) |
 | `insights` | Workforce snapshot cache, `PayStatistics`, `Histogram`, `InsightsCalculator`, `OutlierDetector` |
 | `reference` | Countries, departments, levels, fixed FX rates, `CurrencyConverter` |
@@ -69,6 +71,8 @@ erDiagram
     COUNTRY ||--o{ EMPLOYEE : "employs"
     DEPARTMENT ||--o{ EMPLOYEE : "contains"
     EMPLOYEE ||--|{ SALARY_RECORD : "has history"
+    EMPLOYEE ||--o{ BONUS_AWARD : "is awarded"
+    EMPLOYEE ||--o{ EMPLOYEE_EVENT : "career history"
     COUNTRY ||--|{ PAY_BAND : "defines"
     COUNTRY }o--|| FX_RATE : "currency rate"
     APP_USER |o--o{ SALARY_RECORD : "recorded by"
@@ -87,6 +91,7 @@ erDiagram
         int current_salary_minor "denormalised, local currency"
         text current_salary_currency
         int current_salary_usd_minor "denormalised, for sort and USD aggregates"
+        int variable_target_bp "variable-pay target, % of base in basis points"
         int version "optimistic locking"
         int updated_by_user_id FK
     }
@@ -96,8 +101,26 @@ erDiagram
         int amount_minor "CHECK > 0"
         text currency_code
         text effective_date
-        text reason "HIRE | PROMOTION | ANNUAL_REVIEW | MARKET_ADJUSTMENT | CORRECTION"
+        text reason "HIRE | PROMOTION | ANNUAL_REVIEW | MERIT | MARKET_ADJUSTMENT | CORRECTION"
         text note
+        int recorded_by_user_id FK
+    }
+    BONUS_AWARD {
+        int id PK
+        int employee_id FK
+        text type "PERFORMANCE | SPOT | SIGN_ON | RETENTION"
+        int amount_minor "CHECK > 0"
+        text currency_code
+        text awarded_on
+        int recorded_by_user_id FK
+    }
+    EMPLOYEE_EVENT {
+        int id PK
+        int employee_id FK
+        text type "LEVEL_CHANGED | TITLE_CHANGED | DEPARTMENT_CHANGED | ..."
+        text from_value
+        text to_value
+        text occurred_at
         int recorded_by_user_id FK
     }
     PAY_BAND {
@@ -157,6 +180,32 @@ sequenceDiagram
     Note over UI: On 409: load latest, show what changed,<br/>keep the user's input, let them save again
 ```
 
+### Bulk raise or bonus
+
+```mermaid
+sequenceDiagram
+    actor HR as HR manager
+    participant UI as Directory dialog
+    participant API as BulkChangeController
+    participant S as BulkService
+    participant P as BulkPlanner (pure)
+    participant DB as SQLite
+
+    HR->>UI: filters (India · Engineering · L3), 6% merit raise
+    UI->>API: POST /bulk-changes/preview?country=IN&department=1&level=L3
+    API->>S: preview(criteria, request)
+    S->>DB: directory query + salary histories (900 ids per query)
+    S->>P: plan(targets) — same rules as single changes
+    P-->>S: raises, skipped (grouped by reason)
+    API-->>UI: affected, USD impact, band moves, rows, skipped
+    HR->>UI: Apply (request id created with the preview)
+    UI->>API: POST /bulk-changes?… {…, requestId}
+    S->>DB: request id seen before? → return the first result
+    S->>P: plan again inside the transaction (the preview is never trusted)
+    S->>DB: batch insert records, update employees (version + 1), store request id — one transaction
+    S-->>UI: applied / skipped (WorkforceChanged after commit refreshes insights)
+```
+
 ### Signing in
 
 ```mermaid
@@ -183,6 +232,8 @@ Interactive documentation: `/swagger-ui.html` (spec at `/v3/api-docs`).
 | Auth | `GET /api/auth/session`, `POST /api/auth/login`, `POST /api/auth/logout` |
 | Employees | `GET /api/employees` (search, filters, sort, paging), `GET /api/employees/export.csv`, `GET/POST /api/employees`, `PUT /api/employees/{id}`, `PATCH /api/employees/{id}/status` |
 | Salaries | `GET /api/employees/{id}/salary-history`, `POST /api/employees/{id}/salary-changes` |
+| Career, bonuses | `GET /api/employees/{id}/career-events`, `GET/POST /api/employees/{id}/bonuses` |
+| Bulk changes | `POST /api/bulk-changes/preview?<directory filters>`, `POST /api/bulk-changes?<directory filters>` (idempotent per `requestId`) |
 | Insights | `GET /api/insights/summary`, `/by-country`, `/by-title?country=`, `/distribution`, `/outliers` |
 | Reference | `GET /api/meta`, `GET /api/pay-bands` |
 

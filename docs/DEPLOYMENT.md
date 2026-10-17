@@ -6,7 +6,7 @@ One Docker image serves both the API and the Angular app from the same origin (n
 
 ```
 push to main ──► GitHub Actions CI ──► Render (auto-deploy after CI checks pass)
-                 ├─ backend: 161 tests (unit, slice, integration, ArchUnit)
+                 ├─ backend: ~210 tests (unit, slice, integration, ArchUnit)
                  ├─ frontend: Vitest + production build (bundle budgets)
                  └─ docker: the image Render will build
 ```
@@ -29,7 +29,7 @@ push to main ──► GitHub Actions CI ──► Render (auto-deploy after CI 
 |---|---|
 | Image size | 438 MB (mostly the JRE) |
 | Ready (Spring Boot start + seeding 10k employees) | ~40 s at 0.5 CPU (Render free has 0.1 CPU, so expect 2–3 min) |
-| Seeding 10,000 employees + 18,882 salary records | 0.9 s |
+| Seeding 10,000 employees + 54,907 salary records + 16,038 bonuses | ~1 s |
 | Memory after startup | 257 MB of 512 MB |
 
 ## Render service settings

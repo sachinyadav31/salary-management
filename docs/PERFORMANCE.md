@@ -60,6 +60,20 @@ employee's previous USD salary on the very next request.
 Rows stream from the JDBC cursor to the response (`Transfer-Encoding: chunked`), so memory stays flat regardless
 of size. Trade-off: SQLite's single pooled connection is held during the export, so other requests wait ~0.2 s at worst.
 
+## Bulk changes
+Whole company (9,708 active employees at the time), local SQLite, warm JVM, measured from the browser.
+
+| Request | Time |
+|---|---|
+| `POST /api/bulk-changes/preview` (5% bonus for everyone) | ~205 ms |
+| `POST /api/bulk-changes/preview?country=IN&department=1&level=L3` (239 people) | ~46 ms |
+| `POST /api/bulk-changes` (3% raise for 9,708 people, one transaction) | ~292 ms |
+| Same request id again (idempotent replay, nothing written) | ~8 ms |
+
+**How:** the selection reuses the directory query; salary histories load in chunks of 900 ids (two queries per
+chunk instead of one per person); writes are JDBC batches inside one transaction. The plan is pure Java over that
+data, so preview and apply cost the same and can't disagree.
+
 ## Frontend bundle
 | Chunk | Raw | Transferred (compressed) |
 |---|---|---|
