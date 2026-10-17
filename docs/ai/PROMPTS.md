@@ -104,3 +104,13 @@ For each phase: plan → review the plan → implement test-first → run tests 
   exactly 35 people. The spotlight also exposes a real policy issue in the data: country × level bands don't fit
   every job family (Engineering clusters above band, Operations below). That makes job-family bands the natural
   next iteration.
+
+### Phase 11a — CSV export
+- Same filters and sort as the directory (shared `EmployeeFilterParams` record + shared WHERE builder), so the
+  export always matches what's on screen.
+- Security: text cells starting with `= + - @`, tab or CR get a `'` prefix (OWASP CSV injection); number cells are
+  not guarded, since negative numbers are legitimate. UTF-8 BOM so Excel shows non-ASCII names correctly.
+- Refactor during the phase: search and export had 10 duplicated `@RequestParam`s; replaced them with one
+  record bound from the query string.
+- Verified: 10k rows / 1.7 MB in 171 ms, chunked (streamed); the filtered export of a spotlight card returns exactly
+  the card's 35 people.

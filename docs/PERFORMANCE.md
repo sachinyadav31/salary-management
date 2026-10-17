@@ -50,3 +50,12 @@ summary tables updated on write.
 **Cache correctness:** invalidated *after commit* by a `WorkforceChanged` event, with a generation counter so a load
 that overlaps a write is never served. Verified live: doubling one salary raised total payroll by exactly that
 employee's previous USD salary on the very next request.
+
+## CSV export
+| Request | Rows | Size | Time |
+|---|---|---|---|
+| `GET /api/employees/export.csv` (everything) | 10,000 | 1.7 MB | 171 ms |
+| `…/export.csv?country=IN&title=Operations Analyst&bandPosition=BELOW` | 35 | — | 8 ms |
+
+Rows stream from the JDBC cursor to the response (`Transfer-Encoding: chunked`), so memory stays flat regardless
+of size. Trade-off: SQLite's single pooled connection is held during the export, so other requests wait ~0.2 s at worst.

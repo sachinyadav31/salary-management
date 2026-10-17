@@ -177,4 +177,17 @@ class EmployeeQueryRepositoryTest {
         assertThat(page.content()).extracting(EmployeeSummary::compaRatio).isSorted();
         assertThat(page.content().getFirst().bandPosition()).isEqualTo(BandPosition.BELOW);
     }
+
+    @Test
+    void streamReturnsEveryMatchingRowInTheSameOrderAsSearch() {
+        var criteria = EmployeeSearchCriteria.builder().countries(List.of("IN")).sort(EmployeeSortField.SALARY_USD, true)
+                .size(100).build();
+        List<EmployeeSummary> streamed = new java.util.ArrayList<>();
+
+        queries.stream(criteria, streamed::add);
+
+        var page = queries.search(criteria);
+        assertThat(streamed).hasSize((int) page.totalElements());
+        assertThat(streamed.subList(0, page.content().size())).isEqualTo(page.content());
+    }
 }

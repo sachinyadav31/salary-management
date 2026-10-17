@@ -1,20 +1,20 @@
 package com.acme.salary.employee.api;
 
 import com.acme.salary.common.NotFoundException;
+import com.acme.salary.common.csv.CsvWriter;
 import com.acme.salary.common.web.PageResponse;
 import com.acme.salary.employee.EmployeeService;
 import com.acme.salary.employee.api.EmployeeRequests.ChangeStatusRequest;
 import com.acme.salary.employee.api.EmployeeRequests.CreateEmployeeRequest;
 import com.acme.salary.employee.api.EmployeeRequests.UpdateEmployeeRequest;
 import com.acme.salary.employee.query.EmployeeDetail;
-import com.acme.salary.employee.EmployeeStatus;
-import com.acme.salary.employee.JobLevel;
 import com.acme.salary.employee.query.EmployeeQueryRepository;
 import com.acme.salary.employee.query.EmployeeSearchCriteria;
-import com.acme.salary.employee.query.EmployeeSortField;
 import com.acme.salary.employee.query.EmployeeSummary;
-import com.acme.salary.payband.BandPosition;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,9 +26,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.URI;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -36,45 +40,43 @@ public class EmployeeController {
 
     private final EmployeeQueryRepository queries;
     private final EmployeeService service;
+    private final Clock clock;
 
-    public EmployeeController(EmployeeQueryRepository queries, EmployeeService service) {
+    public EmployeeController(EmployeeQueryRepository queries, EmployeeService service, Clock clock) {
         this.queries = queries;
         this.service = service;
+        this.clock = clock;
     }
 
     /**
-     * Paged directory. Repeat a parameter to filter by several values, e.g. {@code ?country=IN&country=JP}.
-     * Sort is {@code field[,asc|desc]} with field one of name, employeeCode, country, department, jobTitle,
-     * level, hireDate, salaryUsd, compaRatio. {@code compaMax=0.85} finds people paid 15%+ below band midpoint.
+     * Paged directory. Sort is {@code field[,asc|desc]} with field one of name, employeeCode, country,
+     * department, jobTitle, level, hireDate, salaryUsd, compaRatio. {@code compaMax=0.85} finds people paid
+     * 15%+ below band midpoint.
      */
     @GetMapping
-    public PageResponse<EmployeeSummary> search(
-            @RequestParam(required = false) String search,
-            @RequestParam(name = "country", required = false) List<String> countries,
-            @RequestParam(name = "department", required = false) List<Long> departmentIds,
-            @RequestParam(name = "title", required = false) String jobTitle,
-            @RequestParam(name = "level", required = false) List<JobLevel> levels,
-            @RequestParam(required = false) EmployeeStatus status,
-            @RequestParam(required = false) BandPosition bandPosition,
-            @RequestParam(required = false) BigDecimal compaMin,
-            @RequestParam(required = false) BigDecimal compaMax,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "" + EmployeeSearchCriteria.DEFAULT_SIZE) int size,
-            @RequestParam(required = false) String sort) {
-        return queries.search(EmployeeSearchCriteria.builder()
-                .search(search)
-                .countries(countries)
-                .departmentIds(departmentIds)
-                .jobTitle(jobTitle)
-                .levels(levels)
-                .status(status)
-                .bandPosition(bandPosition)
-                .compaMin(compaMin)
-                .compaMax(compaMax)
-                .page(page)
-                .size(size)
-                .sort(EmployeeSortField.parse(sort))
-                .build());
+    public PageResponse<EmployeeSummary> search(EmployeeFilterParams filter,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "" + EmployeeSearchCriteria.DEFAULT_SIZE) int size) {
+        return queries.search(filter.toCriteria().page(page).size(size).build());
+    }
+
+    /**
+     * Same filters and sort as the directory, all matching rows, streamed as CSV (UTF-8 with BOM for Excel).
+     * What you see is what you export: both endpoints share one filter definition and one query builder.
+     */
+    @GetMapping(value = "/export.csv", produces = "text/csv")
+    public void export(EmployeeFilterParams filter, HttpServletResponse response) throws IOException {
+        EmployeeSearchCriteria criteria = filter.toCriteria().build();
+
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                .filename("employees-" + LocalDate.now(clock) + ".csv").build().toString());
+        var writer = new BufferedWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8));
+        writer.write('\uFEFF'); // BOM: makes Excel read the file as UTF-8 (names like Müller, 佐藤)
+        CsvWriter csv = new CsvWriter(writer);
+        EmployeeCsvFormat.writeHeader(csv);
+        queries.stream(criteria, row -> EmployeeCsvFormat.writeRow(csv, row));
+        csv.flush();
     }
 
     @GetMapping("/{id}")

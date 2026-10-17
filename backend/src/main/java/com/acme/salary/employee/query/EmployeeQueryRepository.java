@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Read side of the employee directory. Plain SQL with bound parameters: selects only the columns the
@@ -93,6 +94,19 @@ public class EmployeeQueryRepository {
                 params, ROW_MAPPER);
 
         return PageResponse.of(rows, criteria.page(), criteria.size(), total == null ? 0 : total);
+    }
+
+    /**
+     * Every employee matching the criteria (paging ignored), handed to {@code sink} one row at a time
+     * straight from the JDBC cursor, so an export never holds the whole result in memory.
+     */
+    public void stream(EmployeeSearchCriteria criteria, Consumer<EmployeeSummary> sink) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        String where = whereClause(criteria, params);
+        jdbc.query(COLUMNS + FROM + where + " order by " + criteria.sort().orderBy() + ", e.id asc", params,
+                rs -> {
+                    sink.accept(mapSummary(rs));
+                });
     }
 
     public Optional<EmployeeDetail> findDetail(long id) {

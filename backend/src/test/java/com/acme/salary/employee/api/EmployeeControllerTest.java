@@ -18,28 +18,45 @@ import com.acme.salary.payband.PayBandView;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @WebMvcTest(EmployeeController.class)
+@Import(EmployeeControllerTest.FixedClock.class)
 class EmployeeControllerTest {
+
+    @TestConfiguration
+    static class FixedClock {
+        @Bean
+        Clock clock() {
+            return Clock.fixed(Instant.parse("2026-10-17T09:00:00Z"), ZoneOffset.UTC);
+        }
+    }
 
     @Autowired MockMvcTester mvc;
     @MockitoBean EmployeeQueryRepository queries;
@@ -203,5 +220,41 @@ class EmployeeControllerTest {
         assertThat(mvc.patch().uri("/api/employees/7/status").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\": \"INACTIVE\"}")).hasStatus(400);
         verifyNoInteractions(service);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exportsFilteredEmployeesAsExcelFriendlyCsv() throws Exception {
+        EmployeeSummary hostile = new EmployeeSummary(8, "E00008", "=HYPERLINK(\"http://x\")", "Müller, Jr", "Mueller",
+                "m@acme.example", "DE", "Germany", 4, "Sales", "Account Executive", JobLevel.L2, EmployeeStatus.ACTIVE,
+                LocalDate.of(2022, 3, 1), MoneyView.from(Money.ofMinor(6_000_000, "EUR")),
+                MoneyView.from(Money.ofMinor(6_480_000, "USD")), null, null, null);
+        doAnswer(inv -> {
+            Consumer<EmployeeSummary> sink = inv.getArgument(1);
+            sink.accept(AKIRA);
+            sink.accept(hostile);
+            return null;
+        }).when(queries).stream(any(), any(Consumer.class));
+
+        var result = mvc.get().uri("/api/employees/export.csv?country=JP&country=DE&bandPosition=ABOVE&sort=compaRatio,desc")
+                .exchange();
+
+        assertThat(result).hasStatusOk()
+                .hasHeader("Content-Disposition", "attachment; filename=\"employees-2026-10-17.csv\"");
+        assertThat(result.getResponse().getContentType()).startsWith("text/csv");
+        String body = new String(result.getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
+        assertThat(body).startsWith("\uFEFFEmployee code,First name,Last name,");
+        String[] lines = body.split("\r\n");
+        assertThat(lines).hasSize(3);
+        assertThat(lines[1]).isEqualTo("E00007,Akira,Ito,akira.ito.7@acme.example,Japan,Engineering,Software Engineer,"
+                + "L2,ACTIVE,2021-04-01,9000000,JPY,60300.00,4680000,5850000,7020000,1.54,ABOVE");
+        assertThat(lines[2]).startsWith("E00008,\"'=HYPERLINK(\"\"http://x\"\")\",\"Müller, Jr\",")
+                .endsWith(",60000.00,EUR,64800.00,,,,,");
+
+        ArgumentCaptor<EmployeeSearchCriteria> captor = ArgumentCaptor.forClass(EmployeeSearchCriteria.class);
+        verify(queries).stream(captor.capture(), any(Consumer.class));
+        assertThat(captor.getValue().countries()).containsExactly("JP", "DE");
+        assertThat(captor.getValue().bandPosition()).isEqualTo(BandPosition.ABOVE);
+        assertThat(captor.getValue().sort()).isEqualTo(new EmployeeSortField.Sort(EmployeeSortField.COMPA_RATIO, true));
     }
 }
