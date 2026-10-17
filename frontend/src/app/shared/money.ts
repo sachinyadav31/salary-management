@@ -32,7 +32,7 @@ export function formatMoney(money: Money | null | undefined, style: MoneyStyle =
       style: 'currency',
       currency: money.currency,
       ...(style === 'compact'
-        ? { notation: 'compact', maximumFractionDigits: 1 }
+        ? { notation: 'compact', minimumFractionDigits: 0, maximumFractionDigits: 1 }
         : style === 'whole'
           ? { maximumFractionDigits: 0 }
           : {}),

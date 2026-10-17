@@ -19,6 +19,7 @@ describe('formatMoney', () => {
   it('keeps minor units when exact, and abbreviates when compact', () => {
     expect(formatMoney(money(12345, 'USD', '123.45'), 'exact')).toBe('$123.45');
     expect(formatMoney(money(67968736600, 'USD', '679687366.00'), 'compact')).toBe('$679.7M');
+    expect(formatMoney(money(1000000, 'USD', '10000.00'), 'compact')).toBe('$10K');
   });
 
   it('shows a dash for missing values', () => {

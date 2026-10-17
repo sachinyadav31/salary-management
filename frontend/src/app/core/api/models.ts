@@ -68,3 +68,78 @@ export interface ProblemDetail {
   detail?: string;
   errors?: Record<string, string>;
 }
+
+// --- Insights -----------------------------------------------------------------------------------
+
+export interface PayStats {
+  min: Money;
+  max: Money;
+  average: Money;
+  median: Money;
+}
+
+export interface BandSplit {
+  below: number;
+  within: number;
+  above: number;
+  withinPercent: number | null;
+  averageCompaRatio: number | null;
+}
+
+export interface InsightsSummary {
+  asOf: string;
+  fxRatesAsOf: string;
+  reportingCurrency: string;
+  headcount: number;
+  countries: number;
+  totalPayroll: Money;
+  averageSalary: Money | null;
+  medianSalary: Money | null;
+  bands: BandSplit;
+}
+
+export interface CountryInsight {
+  countryCode: string;
+  countryName: string;
+  currency: string;
+  headcount: number;
+  payroll: Money;
+  payrollUsd: Money;
+  local: PayStats;
+  usd: PayStats;
+  bands: BandSplit;
+}
+
+export interface DistributionBucket {
+  from: Money;
+  to: Money;
+  count: number;
+}
+
+export interface Distribution {
+  asOf: string;
+  currency: string;
+  headcount: number;
+  buckets: DistributionBucket[];
+  stats: PayStats | null;
+}
+
+export type OutlierType = 'UNDERPAID_GROUP' | 'OVERPAID_GROUP' | 'WIDE_SPREAD' | 'DEPARTMENT_LAG';
+
+export interface OutlierCard {
+  id: string;
+  type: OutlierType;
+  severity: number;
+  headline: string;
+  detail: string;
+  affected: number;
+  groupSize: number;
+  /** Directory query params that list exactly the people behind the card. */
+  filter: Record<string, string>;
+}
+
+export interface Envelope<T> {
+  asOf: string;
+  fxRatesAsOf: string;
+  data: T;
+}

@@ -46,6 +46,8 @@ html {
   --pa-below: light-dark(#dc4a33, #ff7a5c);
   --pa-within: light-dark(#0d9488, #2dd4bf);
   --pa-above: light-dark(#7c3aed, #a78bfa);
+  // Country band-health (map): healthy uses --pa-within, concern uses --pa-below.
+  --pa-watch: light-dark(#d97706, #fbbf24);
 
   --pa-radius: 14px;
   --pa-font-display: 'Space Grotesk Variable', 'Inter Variable', system-ui, sans-serif;

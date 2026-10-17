@@ -160,3 +160,18 @@ For each phase: plan → review the plan → implement test-first → run tests 
   on phones found during that check.
 - Production build exceeded the 500 kB initial budget by 14 kB (131 kB transferred); raised the warning budget with a
   documented reason rather than contorting the code.
+
+### Phase 13a — Chart foundations
+- ECharts 6 imported modularly (only bar/scatter/effect-scatter + geo/grid/tooltip + canvas) behind a ~50-line
+  `<pa-chart>` wrapper instead of `ngx-echarts`: no wrapper version to track, runs outside Angular's zone (mouse-move
+  over a canvas doesn't trigger change detection), resizes with its container, disposes on destroy.
+- Canvas needs concrete colours, but `light-dark()` custom properties read back unresolved; a probe element resolves
+  each token for the active theme.
+- World outlines: world-atlas 110m TopoJSON (ISC) served as a static asset and converted at runtime, not bundled JS.
+  Bubbles at fixed coordinates also show Singapore, which is too small for the 110m outlines.
+- Pure option builders, tested: bubble *area* ∝ payroll (sqrt scale), colour = band health (healthy ≥ 87% within,
+  watch ≥ 85%, else concern), selected country moves to a rippling series.
+- Tests caught two issues: compact currency formatting showed "₹10.0L"/"$10.0K" (currency style forces a minimum
+  of 2 decimals; set `minimumFractionDigits: 0`), and an arbitrary tie-break in the percentage split (now explicit).
+- Also fixed my own wrapper bug before it ran: a stray `inject()` inside an `afterNextRender` callback (outside the
+  injection context).
