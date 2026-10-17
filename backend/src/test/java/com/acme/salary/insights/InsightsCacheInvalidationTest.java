@@ -29,6 +29,7 @@ class InsightsCacheInvalidationTest {
     @AfterEach
     void cleanUp() {
         jdbc.update("delete from salary_record where employee_id in (select id from employee where email like '%@cache.test')");
+        jdbc.update("delete from employee_event where employee_id in (select id from employee where email like '%@cache.test')");
         jdbc.update("delete from employee where email like '%@cache.test'");
         cache.invalidate();
     }

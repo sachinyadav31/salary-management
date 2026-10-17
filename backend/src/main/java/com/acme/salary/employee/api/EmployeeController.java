@@ -3,6 +3,7 @@ package com.acme.salary.employee.api;
 import com.acme.salary.common.NotFoundException;
 import com.acme.salary.common.csv.CsvWriter;
 import com.acme.salary.common.web.PageResponse;
+import com.acme.salary.employee.CareerEventView;
 import com.acme.salary.employee.EmployeeService;
 import com.acme.salary.employee.api.EmployeeRequests.ChangeStatusRequest;
 import com.acme.salary.employee.api.EmployeeRequests.CreateEmployeeRequest;
@@ -36,6 +37,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @Tag(name = "Employees", description = "Directory, profiles and status")
@@ -92,6 +94,12 @@ public class EmployeeController {
     }
 
     /** Commands go through the service; the response is read back from the query side. */
+    @Operation(summary = "Career history: level, title, department and status changes, newest first")
+    @GetMapping("/{id}/career-events")
+    public List<CareerEventView> careerEvents(@PathVariable long id) {
+        return service.careerEvents(id);
+    }
+
     @Operation(summary = "Hire an employee (records the HIRE salary)")
     @PostMapping
     public ResponseEntity<EmployeeDetail> create(@Valid @RequestBody CreateEmployeeRequest request) {

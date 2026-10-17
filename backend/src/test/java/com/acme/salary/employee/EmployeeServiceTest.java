@@ -171,4 +171,30 @@ class EmployeeServiceTest {
         return new CreateEmployee(" Akira ", "Ito", email, country, 1, "Software Engineer", JobLevel.L3,
                 LocalDate.of(2026, 11, 1), new BigDecimal(amount));
     }
+
+    @Test
+    void recordsCareerEventsForLevelTitleAndStatusChangesOnly() {
+        long id = service.create(newHire("IN", "1500000"));
+        em.flush();
+
+        // Name and email edits are corrections, not career events.
+        service.updateProfile(id, new UpdateProfile("Akira", "Ito-Sato", "akira.sato@acme.test", 1, "Software Engineer", JobLevel.L3, 0));
+        em.flush();
+        service.updateProfile(id, new UpdateProfile("Akira", "Ito-Sato", "akira.sato@acme.test", 1, "Senior Software Engineer", JobLevel.L4, 1));
+        em.flush();
+        service.changeStatus(id, EmployeeStatus.INACTIVE, 2);
+        em.flush();
+
+        // The test clock is fixed, so every event shares one instant and recording order applies;
+        // in real use the newest edit comes first.
+        assertThat(service.careerEvents(id)).extracting(e -> e.type() + ":" + e.from() + "->" + e.to()).containsExactly(
+                "LEVEL_CHANGED:L3->L4",
+                "TITLE_CHANGED:Software Engineer->Senior Software Engineer",
+                "DEACTIVATED:null->null");
+    }
+
+    @Test
+    void careerEventsOfUnknownEmployeeAreNotFound() {
+        assertThatThrownBy(() -> service.careerEvents(424242)).isInstanceOf(NotFoundException.class);
+    }
 }

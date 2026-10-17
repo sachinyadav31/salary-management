@@ -36,6 +36,7 @@ class AuthIntegrationTest {
     @AfterEach
     void cleanUp() {
         jdbc.update("delete from salary_record where employee_id in (select id from employee where email like '%@auth.test')");
+        jdbc.update("delete from employee_event where employee_id in (select id from employee where email like '%@auth.test')");
         jdbc.update("delete from employee where email like '%@auth.test'");
     }
 
@@ -127,6 +128,16 @@ class AuthIntegrationTest {
         var history = mvc.get().uri(created + "/salary-history").session(session);
         assertThat(history).hasStatusOk().bodyJson().extractingPath("$[0].recordedBy").isEqualTo("Priya Sharma");
         assertThat(mvc.get().uri(created).session(session)).bodyJson().extractingPath("$.updatedBy").isEqualTo("Priya Sharma");
+
+        Cookie writeToken = xsrfCookie();
+        assertThat(mvc.put().uri(created).session(session).cookie(writeToken).header("X-XSRF-TOKEN", writeToken.getValue())
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"firstName":"Audit","lastName":"Trail","email":"audit@auth.test","departmentId":1,
+                         "jobTitle":"Engineer","level":"L3","version":0}""")).hasStatusOk();
+        var events = mvc.get().uri(created + "/career-events").session(session);
+        assertThat(events).hasStatusOk().bodyJson().extractingPath("$[0].type").isEqualTo("LEVEL_CHANGED");
+        assertThat(mvc.get().uri(created + "/career-events").session(session)).bodyJson()
+                .extractingPath("$[0].recordedBy").isEqualTo("Priya Sharma");
     }
 
     private MockHttpSession signIn(String email) {

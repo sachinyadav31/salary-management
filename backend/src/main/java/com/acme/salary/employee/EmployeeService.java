@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 
 /** Write side for employees. Each public method is one transaction. */
@@ -25,21 +26,24 @@ import java.util.Locale;
 public class EmployeeService {
 
     private final EmployeeRepository employees;
+    private final EmployeeEventRepository events;
     private final CountryRepository countries;
     private final DepartmentRepository departments;
     private final CurrencyConverter converter;
-    private final ApplicationEventPublisher events;
+    private final ApplicationEventPublisher publisher;
     private final CurrentUser currentUser;
     private final Clock clock;
 
-    public EmployeeService(EmployeeRepository employees, CountryRepository countries, DepartmentRepository departments,
-                           CurrencyConverter converter, ApplicationEventPublisher events, CurrentUser currentUser,
+    public EmployeeService(EmployeeRepository employees, EmployeeEventRepository events, CountryRepository countries,
+                           DepartmentRepository departments,
+                           CurrencyConverter converter, ApplicationEventPublisher publisher, CurrentUser currentUser,
                            Clock clock) {
         this.employees = employees;
+        this.events = events;
         this.countries = countries;
         this.departments = departments;
         this.converter = converter;
-        this.events = events;
+        this.publisher = publisher;
         this.currentUser = currentUser;
         this.clock = clock;
     }
@@ -59,12 +63,14 @@ public class EmployeeService {
         Money salary = Money.of(cmd.salaryAmount(), country.getCurrencyCode());
         Instant now = clock.instant();
 
-        Employee employee = employees.save(new Employee(nextEmployeeCode(), cmd.firstName().trim(),
+        Employee employee = new Employee(nextEmployeeCode(), cmd.firstName().trim(),
                 cmd.lastName().trim(), email, country, department, cmd.jobTitle().trim(), cmd.level(),
-                cmd.hireDate(), salary, converter.toUsd(salary), now));
+                cmd.hireDate(), salary, converter.toUsd(salary), now);
+        // Set before saving: one INSERT at version 0 (setting it after would dirty the new row and bump the version).
         employee.editedBy(currentUser.reference().orElse(null));
-        events.publishEvent(new EmployeeHired(employee, salary, now));
-        events.publishEvent(new WorkforceChanged("employee hired"));
+        employees.save(employee);
+        publisher.publishEvent(new EmployeeHired(employee, salary, now));
+        publisher.publishEvent(new WorkforceChanged("employee hired"));
         return employee.getId();
     }
 
@@ -74,17 +80,21 @@ public class EmployeeService {
         if (employees.existsByEmailAndIdNot(email, id)) {
             throw new ConflictException("An employee with email " + email + " already exists");
         }
+        CareerChanges.Snapshot before = snapshot(employee);
         employee.updateProfile(cmd.firstName().trim(), cmd.lastName().trim(), email,
                 department(cmd.departmentId()), cmd.jobTitle().trim(), cmd.level(), clock.instant());
         employee.editedBy(currentUser.reference().orElse(null));
-        events.publishEvent(new WorkforceChanged("profile updated"));
+        recordCareerEvents(employee, before);
+        publisher.publishEvent(new WorkforceChanged("profile updated"));
     }
 
     public void changeStatus(long id, EmployeeStatus status, long expectedVersion) {
         Employee employee = findForUpdate(id, expectedVersion);
+        CareerChanges.Snapshot before = snapshot(employee);
         employee.changeStatus(status, clock.instant());
         employee.editedBy(currentUser.reference().orElse(null));
-        events.publishEvent(new WorkforceChanged("status changed"));
+        recordCareerEvents(employee, before);
+        publisher.publishEvent(new WorkforceChanged("status changed"));
     }
 
     /**
@@ -96,6 +106,29 @@ public class EmployeeService {
                 .orElseThrow(() -> new NotFoundException("Employee " + id + " not found"));
         employee.assertVersion(expectedVersion);
         return employee;
+    }
+
+    /** Career history, newest first. Mapped inside the transaction (open-in-view is off). */
+    @Transactional(readOnly = true)
+    public List<CareerEventView> careerEvents(long id) {
+        if (!employees.existsById(id)) {
+            throw new NotFoundException("Employee " + id + " not found");
+        }
+        return events.findByEmployeeIdOrderByOccurredAtDescIdAsc(id).stream()
+                .map(e -> new CareerEventView(e.getId(), e.getType(), e.getFromValue(), e.getToValue(), e.getOccurredAt(),
+                        e.getRecordedBy() == null ? null : e.getRecordedBy().getFullName()))
+                .toList();
+    }
+
+    private void recordCareerEvents(Employee employee, CareerChanges.Snapshot before) {
+        Instant now = clock.instant();
+        var actor = currentUser.reference().orElse(null);
+        CareerChanges.between(before, snapshot(employee))
+                .forEach(change -> events.save(new EmployeeEvent(employee, change, now, actor)));
+    }
+
+    private static CareerChanges.Snapshot snapshot(Employee e) {
+        return new CareerChanges.Snapshot(e.getLevel(), e.getJobTitle(), e.getDepartment().getName(), e.getStatus());
     }
 
     private Department department(long id) {
