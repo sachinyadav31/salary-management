@@ -40,7 +40,7 @@ push to main ──► GitHub Actions CI ──► Render (auto-deploy after CI 
 | Region | Singapore | Closest to the users (India) |
 | Instance | Free | Demo |
 | Health check path | `/actuator/health` | Traffic is routed only after startup and seeding |
-| Environment variables | none | The image sets `SALARY_DB_PATH`, `SEED_ENABLED`, JVM options; Render injects `PORT` |
+| Environment variables | none | The image sets `SALARY_DB_PATH`, `SEED_ENABLED`, `SESSION_COOKIE_SECURE=true`, JVM options; Render injects `PORT` |
 | Auto-Deploy | After CI checks pass | A failing test never reaches the live site |
 | Build filters (ignored) | `docs/**`, `**/*.md` | Documentation-only commits don't redeploy |
 
@@ -53,11 +53,21 @@ push to main ──► GitHub Actions CI ──► Render (auto-deploy after CI 
 - **Production path:** a persistent disk (paid plan) for SQLite, or Postgres for multiple instances. Flyway
   migrations already own the schema, so moving databases means swapping the driver and dialect, not the code.
 
+## Sessions on the free tier
+
+Sessions are held in memory. A deploy, a restart or the free tier waking from sleep signs everyone out; the app
+answers with "Your session expired" and returns the user to the same page after signing in. Behind Render's TLS the
+app reads `X-Forwarded-*` headers (`server.forward-headers-strategy=framework`), so the session cookie is `Secure`.
+
 ## Run the production image locally
 
 ```bash
 docker build -t pay-atlas .
-docker run --rm -p 8080:8080 -m 512m pay-atlas
 ```
 
-Then open http://localhost:8080 (app), http://localhost:8080/swagger-ui.html (API docs).
+```bash
+docker run --rm -p 8080:8080 -m 512m -e SESSION_COOKIE_SECURE=false pay-atlas
+```
+
+Then open http://localhost:8080 (app) and http://localhost:8080/swagger-ui.html (API docs), and sign in with a demo
+account from the README.

@@ -277,3 +277,12 @@ For each phase: plan → review the plan → implement test-first → run tests 
 - Verified in the browser: deep link → login → back to the drawer; a salary change from the UI recorded
   "by Priya Sharma"; sign-out kills the server session (API 401, Back button guarded); restarting the backend while
   signed in leads to "Your session expired" with no error toasts.
+- Verified on the live site after CI: deep link → sign-in → back to the drawer; the CSRF cookie arrives `Secure`
+  (forwarded headers behind Render's TLS work); a salary change over HTTPS recorded "by Priya Sharma"; the session
+  cookie is invisible to JavaScript.
+
+### Phase 17 — Documentation
+- README (live link, demo accounts, run/test/deploy), DESIGN (Mermaid system, data model and flow diagrams) and
+  DECISIONS (19 decisions with alternatives and trade-offs), written after the code so they describe what exists.
+- Caught while writing: the image's `Secure` session cookie may not be stored by Safari on plain-HTTP localhost, so
+  the local `docker run` instructions pass `SESSION_COOKIE_SECURE=false`.
