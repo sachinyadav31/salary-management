@@ -1,0 +1,228 @@
+<!-- KPI cards -->
+<section class="kpis" aria-label="Key figures">
+  <article class="card kpi">
+    <span class="kpi-label"><mat-icon>groups</mat-icon> Active employees</span>
+    @if (summary().data; as s) {
+      <pa-count-up class="kpi-value display" [value]="s.headcount" [format]="formatCount" />
+      <span class="kpi-sub muted">across {{ s.countries }} countries</span>
+    } @else if (summary().error) {
+      <button mat-button type="button" (click)="reload()">Retry</button>
+    } @else {
+      <span class="skeleton-line wide"></span>
+    }
+  </article>
+
+  <article class="card kpi">
+    <span class="kpi-label"><mat-icon>payments</mat-icon> Annual payroll</span>
+    @if (summary().data; as s) {
+      <pa-count-up class="kpi-value display" [value]="s.totalPayroll.minorUnits" [format]="formatUsdCompact" />
+      <span class="kpi-sub muted">average {{ s.averageSalary | money }} per person</span>
+    } @else if (!summary().error) {
+      <span class="skeleton-line wide"></span>
+    }
+  </article>
+
+  <article class="card kpi">
+    <span class="kpi-label"><mat-icon>balance</mat-icon> Median salary</span>
+    @if (summary().data; as s) {
+      <pa-count-up class="kpi-value display" [value]="s.medianSalary?.minorUnits ?? 0" [format]="formatUsd" />
+      <span class="kpi-sub muted">half of ACME earns less than this (USD)</span>
+    } @else if (!summary().error) {
+      <span class="skeleton-line wide"></span>
+    }
+  </article>
+
+  <article class="card kpi">
+    <span class="kpi-label"><mat-icon>verified</mat-icon> Paid within band</span>
+    @if (summary().data; as s) {
+      <pa-count-up class="kpi-value display" [value]="s.bands.withinPercent ?? 0" [format]="formatPercent" />
+      @if (orgSplit(); as split) {
+        <div class="split-bar" role="img"
+             [attr.aria-label]="split.below + '% below band, ' + split.within + '% within, ' + split.above + '% above'">
+          <span class="below" [style.width.%]="split.below"></span>
+          <span class="within" [style.width.%]="split.within"></span>
+          <span class="above" [style.width.%]="split.above"></span>
+        </div>
+        <span class="kpi-sub muted num">
+          <span class="dot below"></span>{{ s.bands.below | number }} below ·
+          <span class="dot above"></span>{{ s.bands.above | number }} above
+        </span>
+      }
+    } @else if (!summary().error) {
+      <span class="skeleton-line wide"></span>
+    }
+  </article>
+</section>
+
+<!-- Map + outlier spotlight -->
+<section class="grid-2">
+  <article class="card map-card">
+    <header class="card-head">
+      <div>
+        <h2 class="display">Where the payroll goes</h2>
+        <p class="muted">Bubble size = annual payroll (USD) · colour = share paid within band · click a country</p>
+      </div>
+      <div class="legend" aria-label="Band health legend">
+        <span><span class="dot within"></span>Healthy</span>
+        <span><span class="dot watch"></span>Watch</span>
+        <span><span class="dot below"></span>Concern</span>
+      </div>
+    </header>
+    <div class="map">
+      @if (mapChart(); as option) {
+        <pa-chart [option]="option" ariaLabel="World map of payroll by country" (chartClick)="onMapClick($event)" />
+      } @else if (countries().error || mapReady().error) {
+        <div class="card-error"><mat-icon>cloud_off</mat-icon> Couldn't load the map <button mat-button type="button" (click)="reload()">Retry</button></div>
+      } @else {
+        <div class="skeleton-block"></div>
+      }
+    </div>
+    @if (selected(); as c) {
+      <div class="selection">
+        <span class="flag" aria-hidden="true">{{ flag(c.countryCode) }}</span>
+        <strong>{{ c.countryName }}</strong>
+        <span class="muted num">{{ c.headcount | number }} people · median {{ c.local.median | money }}</span>
+        <span class="spacer"></span>
+        <a mat-button routerLink="/employees" [queryParams]="{ country: c.countryCode }">View employees <mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+        <button mat-icon-button type="button" aria-label="Clear country selection" (click)="selectCountry(null)"><mat-icon>close</mat-icon></button>
+      </div>
+    }
+  </article>
+
+  <article class="card spotlight">
+    <header class="card-head">
+      <div>
+        <h2 class="display">Spotlight</h2>
+        <p class="muted">Pay patterns worth a closer look, most significant first</p>
+      </div>
+    </header>
+    @if (outliers().data; as cards) {
+      <ol class="outliers">
+        @for (card of cards; track card.id) {
+          <li class="outlier" [class]="'outlier ' + outlierStyle[card.type].tone">
+            <div class="outlier-type">
+              <mat-icon>{{ outlierStyle[card.type].icon }}</mat-icon>{{ outlierStyle[card.type].label }}
+            </div>
+            <p class="headline">{{ card.headline }}</p>
+            <p class="detail muted">{{ card.detail }}</p>
+            <div class="outlier-foot">
+              <span class="severity" [matTooltip]="'Severity ' + card.severity + ' (people × compa-ratio points)'">
+                <span [style.width.%]="severityWidth(card)"></span>
+              </span>
+              <a routerLink="/employees" [queryParams]="card.filter" class="see">
+                See {{ card.affected | number }} {{ card.affected === 1 ? 'person' : 'people' }} <mat-icon>arrow_forward</mat-icon>
+              </a>
+            </div>
+          </li>
+        } @empty {
+          <li class="muted">Nothing stands out. Pay looks consistent across groups.</li>
+        }
+      </ol>
+    } @else if (outliers().error) {
+      <div class="card-error"><mat-icon>cloud_off</mat-icon> Couldn't load <button mat-button type="button" (click)="reload()">Retry</button></div>
+    } @else {
+      @for (i of [1, 2, 3]; track i) { <div class="skeleton-block short"></div> }
+    }
+  </article>
+</section>
+
+<!-- Countries -->
+<article class="card">
+  <header class="card-head">
+    <div>
+      <h2 class="display">Countries</h2>
+      <p class="muted">Local currency with USD equivalents · click a row to focus the map and distribution</p>
+    </div>
+  </header>
+  @if (countries().data; as rows) {
+    <div class="scroll">
+      <table class="countries">
+        <thead>
+          <tr>
+            <th scope="col">Country</th>
+            <th scope="col" class="right">People</th>
+            <th scope="col">Payroll (USD)</th>
+            <th scope="col" class="right">Median salary</th>
+            <th scope="col">Band split</th>
+            <th scope="col" class="center">Avg compa</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of rows; track c.countryCode) {
+            <tr [class.selected]="c.countryCode === selectedCountry()" (click)="selectCountry(c.countryCode)">
+              <td>
+                <button type="button" class="country-button" [attr.aria-pressed]="c.countryCode === selectedCountry()"
+                        (click)="$event.stopPropagation(); selectCountry(c.countryCode)">
+                  <span class="flag" aria-hidden="true">{{ flag(c.countryCode) }}</span>
+                  <span>{{ c.countryName }}</span>
+                  <span class="currency muted">{{ c.currency }}</span>
+                  <span class="dot" [class]="'dot ' + (health(c.bands.withinPercent) === 'healthy' ? 'within' : health(c.bands.withinPercent) === 'watch' ? 'watch' : 'below')"
+                        [matTooltip]="'Band health: ' + health(c.bands.withinPercent)"></span>
+                </button>
+              </td>
+              <td class="right num">{{ c.headcount | number }}</td>
+              <td>
+                <div class="share">
+                  <span class="num">{{ c.payrollUsd | money: 'compact' }}</span>
+                  <span class="share-bar"><span [style.width.%]="payrollShare(c)"></span></span>
+                  <span class="muted num">{{ payrollShare(c) | number: '1.0-0' }}%</span>
+                </div>
+              </td>
+              <td class="right num">
+                <div>{{ c.local.median | money }}</div>
+                @if (c.currency !== 'USD') { <div class="muted sub">≈ {{ c.usd.median | money }}</div> }
+              </td>
+              <td>
+                @let s = split(c.bands);
+                <div class="split-bar small" [matTooltip]="s.below + '% below · ' + s.within + '% within · ' + s.above + '% above'">
+                  <span class="below" [style.width.%]="s.below"></span>
+                  <span class="within" [style.width.%]="s.within"></span>
+                  <span class="above" [style.width.%]="s.above"></span>
+                </div>
+              </td>
+              <td class="center"><pa-compa-badge [compa]="c.bands.averageCompaRatio" position="WITHIN" /></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (countries().error) {
+    <div class="card-error"><mat-icon>cloud_off</mat-icon> Couldn't load <button mat-button type="button" (click)="reload()">Retry</button></div>
+  } @else {
+    @for (i of [1, 2, 3, 4]; track i) { <div class="skeleton-block row"></div> }
+  }
+</article>
+
+<!-- Distribution -->
+<article class="card">
+  <header class="card-head">
+    <div>
+      <h2 class="display">Salary distribution · {{ selected()?.countryName ?? 'Whole company' }}</h2>
+      <p class="muted">
+        @if (distribution().data; as d) {
+          {{ d.headcount | number }} people in {{ d.currency }}
+          @if (d.stats; as st) { · median {{ st.median | money }} · range {{ st.min | money }} – {{ st.max | money }} }
+        } @else { &nbsp; }
+      </p>
+    </div>
+    <div class="dist-actions">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Department</mat-label>
+        <mat-select [value]="selectedDepartment()" (selectionChange)="selectDepartment($event.value)">
+          <mat-option [value]="null">All departments</mat-option>
+          @for (d of meta()?.departments ?? []; track d.id) { <mat-option [value]="d.id">{{ d.name }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <a mat-stroked-button routerLink="/employees" [queryParams]="directoryParams()">Open in directory</a>
+    </div>
+  </header>
+  <div class="dist">
+    @if (distributionChart(); as option) {
+      <pa-chart [option]="option" [ariaLabel]="'Salary histogram for ' + (selected()?.countryName ?? 'the whole company')" />
+    } @else if (distribution().error) {
+      <div class="card-error"><mat-icon>cloud_off</mat-icon> Couldn't load <button mat-button type="button" (click)="reload()">Retry</button></div>
+    } @else {
+      <div class="skeleton-block"></div>
+    }
+  </div>
+</article>

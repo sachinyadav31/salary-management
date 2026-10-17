@@ -175,3 +175,20 @@ For each phase: plan → review the plan → implement test-first → run tests 
   of 2 decimals; set `minimumFractionDigits: 0`), and an arbitrary tie-break in the percentage split (now explicit).
 - Also fixed my own wrapper bug before it ran: a stray `inject()` inside an `afterNextRender` callback (outside the
   injection context).
+
+### Phase 13b — Insights dashboard
+- Each card loads, fails and retries independently (`loadable()` helper); KPI numbers count up outside Angular's zone
+  and skip the animation when reduce-motion is on. The country selection lives in the URL, like the directory filters.
+- Verified in the built-in browser on 10k employees: KPIs, payroll bubble map, spotlight cards, countries table and
+  an INR histogram for India after clicking its bubble.
+- Issues found while checking and fixed:
+  1. A runtime bug the compiler couldn't catch: `inject()` inside a lambda run later by `switchMap` (outside the
+     injection context). Moved it to a field before running.
+  2. Horizontal stripes across the map: polygons crossing the ±180° meridian (Russia, Fiji). Unwrapped those rings
+     (+360° on the western half) and dropped Antarctica; covered by a unit test.
+  3. "Map failed" on first load turned out to be a stale dev-server cache after installing ECharts mid-session, not
+     app code. A restart fixed it.
+  4. One click of mine landed on the wrong element because I used a stale screenshot. I reproduced the interaction
+     with synthetic events before concluding the app was fine.
+- Component tests stub the canvas chart (jsdom has no canvas) and cover KPIs, spotlight links (exact filter),
+  country selection → URL → INR distribution request, and isolated card failure.

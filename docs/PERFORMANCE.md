@@ -64,7 +64,13 @@ of size. Trade-off: SQLite's single pooled connection is held during the export,
 | Chunk | Raw | Transferred (compressed) |
 |---|---|---|
 | Initial (shell, router, Material core + overlay) | 514 kB | 131 kB |
-| Employees page (lazy) | 234 kB | 45 kB |
+| Employees page (lazy) | 102 kB | 22 kB |
+| Insights page (lazy, incl. modular ECharts) | 605 kB | 173 kB |
+| World map outlines (static JSON asset, fetched once) | 108 kB | — |
 
 The initial-bundle warning budget was raised from Angular's default 500 kB to 600 kB: the overage is Material's
 overlay (tooltips, error snackbar) that the shell needs on every page. The budget remains as a regression tripwire.
+
+ECharts is imported modularly and only in the lazy insights chunk, so the directory never downloads chart code.
+The per-component style budget was raised from 4 kB to 8 kB for the dashboard (KPIs, map, spotlight, table and
+distribution in one component's styles).

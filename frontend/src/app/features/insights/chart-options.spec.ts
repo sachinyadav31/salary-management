@@ -92,3 +92,22 @@ describe('helpers', () => {
       .toEqual({ below: 0, within: 0, above: 0 });
   });
 });
+
+describe('world map preparation', () => {
+  it('unwraps rings crossing the antimeridian so they do not streak across the map', async () => {
+    const { unwrapAntimeridian, prepareWorld } = await import('../../shared/charts/world-map');
+
+    expect(unwrapAntimeridian([[179, 65], [-179, 66], [-178, 64], [179, 65]]))
+      .toEqual([[179, 65], [181, 66], [182, 64], [179, 65]]);
+    expect(unwrapAntimeridian([[10, 50], [12, 51], [10, 50]])).toEqual([[10, 50], [12, 51], [10, 50]]);
+
+    const world = prepareWorld({
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', properties: { name: 'Antarctica' }, geometry: { type: 'Polygon', coordinates: [] } },
+        { type: 'Feature', properties: { name: 'India' }, geometry: { type: 'Polygon', coordinates: [] } },
+      ],
+    });
+    expect(world.features.map((f) => f.properties?.['name'])).toEqual(['India']);
+  });
+});
