@@ -26,7 +26,7 @@ public record EmployeeFilterParams(
         BigDecimal compaMax,
         String sort) {
 
-    EmployeeSearchCriteria.Builder toCriteria() {
+    public EmployeeSearchCriteria.Builder toCriteria() {
         return EmployeeSearchCriteria.builder()
                 .search(search)
                 .countries(country)

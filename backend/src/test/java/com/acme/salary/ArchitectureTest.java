@@ -1,6 +1,7 @@
 package com.acme.salary;
 
 import com.acme.salary.bonus.BonusRules;
+import com.acme.salary.bulk.BulkPlanner;
 import com.acme.salary.common.Money;
 import com.acme.salary.employee.CareerChanges;
 import com.acme.salary.employee.VariableTarget;
@@ -43,7 +44,7 @@ class ArchitectureTest {
             .that().belongToAnyOf(Money.class, CurrencyConverter.class, SalaryHistory.class, PayStatistics.class,
                     Histogram.class, InsightsCalculator.class, OutlierDetector.class, CompaRatio.class,
                     EmployeeSeedGenerator.class, CsvWriter.class, BonusRules.class,
-                    VariableTarget.class, CareerChanges.class)
+                    VariableTarget.class, CareerChanges.class, BulkPlanner.class)
             .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..",
                     "org.hibernate..")
             .because("business rules must be unit-testable without starting Spring or a database");

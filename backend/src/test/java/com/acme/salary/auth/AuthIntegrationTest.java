@@ -39,6 +39,7 @@ class AuthIntegrationTest {
         jdbc.update("delete from employee_event where employee_id in (select id from employee where email like '%@auth.test')");
         jdbc.update("delete from bonus_award where employee_id in (select id from employee where email like '%@auth.test')");
         jdbc.update("delete from employee where email like '%@auth.test'");
+        jdbc.update("delete from bulk_change");
     }
 
     @Test
@@ -145,6 +146,16 @@ class AuthIntegrationTest {
                 .header("X-XSRF-TOKEN", bonusToken.getValue()).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"type\":\"SPOT\",\"amount\":\"2500\",\"awardedOn\":\"2025-06-01\",\"note\":\"Shipped the audit trail\"}");
         assertThat(bonus).hasStatus(201).bodyJson().extractingPath("$[0].recordedBy").isEqualTo("Priya Sharma");
+
+        Cookie bulkToken = xsrfCookie();
+        var bulk = mvc.post().uri("/api/bulk-changes?search=audit@auth.test").session(session).cookie(bulkToken)
+                .header("X-XSRF-TOKEN", bulkToken.getValue()).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"kind":"RAISE","percent":"3","effectiveDate":"2026-04-01","reason":"MERIT",
+                         "requestId":"6f1c2c1e-0000-4000-8000-000000000001"}""");
+        assertThat(bulk).hasStatusOk().bodyJson().extractingPath("$.applied").isEqualTo(1);
+        assertThat(mvc.get().uri(created + "/salary-history").session(session)).bodyJson()
+                .extractingPath("$[0].recordedBy").isEqualTo("Priya Sharma");
     }
 
     private MockHttpSession signIn(String email) {
