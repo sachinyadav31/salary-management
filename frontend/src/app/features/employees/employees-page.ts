@@ -12,8 +12,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, debounceTime, distinctUntilChanged, map, of, scan, startWith, switchMap } from 'rxjs';
+import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { catchError, debounceTime, distinctUntilChanged, filter, map, merge, of, scan, startWith, switchMap } from 'rxjs';
 
 import { EmployeeApi } from '../../core/api/employee-api';
 import { MetaApi } from '../../core/api/meta-api';
@@ -45,7 +45,7 @@ const QUICK_FILTERS: { id: QuickFilterId; label: string; patch: Partial<Director
   imports: [
     DecimalPipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule,
     MatPaginatorModule, MatProgressBarModule, MatSelectModule, MatSortModule, MatTableModule, MatTooltipModule,
-    BandBar, CompaBadge, MoneyPipe,
+    RouterLink, RouterOutlet, BandBar, CompaBadge, MoneyPipe,
   ],
   templateUrl: './employees-page.html',
   styleUrl: './employees-page.scss',
@@ -58,8 +58,9 @@ export class EmployeesPage {
   protected readonly meta = toSignal(inject(MetaApi).meta$);
   protected readonly query = toSignal(this.route.queryParams.pipe(map(fromQueryParams)), { initialValue: DEFAULT_QUERY });
 
+  /** Refetch on filter changes, and after any save in the drawer so the row behind it is current. */
   protected readonly state = toSignal(
-    toObservable(this.query).pipe(
+    merge(toObservable(this.query), this.api.changed$.pipe(map(() => this.query()))).pipe(
       switchMap((query) =>
         this.api.search(toApiParams(query)).pipe(
           map((page): LoadState => ({ loading: false, failed: false, page })),
@@ -70,6 +71,16 @@ export class EmployeesPage {
       scan((previous, next) => ({ ...next, page: next.page ?? (next.failed ? null : previous.page) })),
     ),
     { initialValue: { loading: true, failed: false, page: null } as LoadState },
+  );
+
+  /** Id of the employee open in the drawer (child route), to highlight their row. */
+  protected readonly openId = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      startWith(null),
+      map(() => Number(this.route.snapshot.firstChild?.params['id']) || null),
+    ),
+    { initialValue: null },
   );
 
   protected readonly rows = computed(() => this.state().page?.content ?? []);
@@ -111,6 +122,10 @@ export class EmployeesPage {
   protected update(patch: Partial<DirectoryQuery>, options: { keepPage?: boolean; replaceUrl?: boolean } = {}): void {
     const next = { ...this.query(), ...patch, ...(options.keepPage ? {} : { page: 0 }) };
     this.router.navigate([], { relativeTo: this.route, queryParams: toQueryParams(next), replaceUrl: options.replaceUrl });
+  }
+
+  protected open(employee: EmployeeSummary): void {
+    this.router.navigate([employee.id], { relativeTo: this.route, queryParamsHandling: 'preserve' });
   }
 
   protected onSort(sort: Sort): void {

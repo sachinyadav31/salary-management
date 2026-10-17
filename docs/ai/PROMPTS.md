@@ -192,3 +192,19 @@ For each phase: plan → review the plan → implement test-first → run tests 
      with synthetic events before concluding the app was fine.
 - Component tests stub the canvas chart (jsdom has no canvas) and cover KPIs, spotlight links (exact filter),
   country selection → URL → INR distribution request, and isolated card failure.
+
+### Phase 14a–14b — Employee drawer (read view)
+- Drawer is a child route (`/employees/:id?…filters`): deep-linkable, Back closes it, and the list's query params
+  don't change, so opening it doesn't refetch the list (asserted in a test).
+- Forms will be presentational; the drawer owns API calls and conflict handling (one place for 409 logic). Writes
+  carry an `HttpContext` flag so the global snackbar stays quiet for errors a form shows inline.
+- `parseAmount` uses string arithmetic (a test pins `0.29` → 29 minor units, which `0.29 * 100` gets wrong), and the
+  salary preview uses the backend's exact compa-ratio integer formula.
+- Found while checking in the browser:
+  1. The directory's sticky table header (Material z-index 100) drew over the drawer; the drawer is now the modal
+     layer (z-index 1000).
+  2. The timeline chart was blank: modular ECharts didn't register `LineChart` and only logs a console error. Added a
+     test that checks every series type the option builders use against **ECharts' own registry**, so this class of
+     bug fails CI instead of failing silently.
+  3. Single-record histories drew nothing; the solid line now carries the current salary forward to today.
+  4. Duplicate y-axis labels (¥6.6M twice); axis ticks now use 3 significant digits.

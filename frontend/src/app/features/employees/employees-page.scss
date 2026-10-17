@@ -179,7 +179,23 @@ table {
 }
 
 .name {
+  color: inherit;
   font-weight: 600;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--pa-accent);
+    text-decoration: underline;
+  }
+}
+
+tr.clickable {
+  cursor: pointer;
+
+  &.open td {
+    background: color-mix(in srgb, var(--pa-accent) 10%, transparent);
+  }
 }
 
 .sub {

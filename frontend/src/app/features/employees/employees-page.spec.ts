@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -32,6 +33,9 @@ const TOM: EmployeeSummary = {
   bandPosition: 'BELOW',
 };
 
+@Component({ selector: 'pa-drawer-stub', template: '' })
+class DrawerStub {}
+
 const page = (content: EmployeeSummary[], totalElements = content.length): PageResponse<EmployeeSummary> =>
   ({ content, page: 0, size: 25, totalElements, totalPages: Math.ceil(totalElements / 25) });
 
@@ -42,7 +46,7 @@ describe('EmployeesPage', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([{ path: 'employees', component: EmployeesPage }]),
+        provideRouter([{ path: 'employees', component: EmployeesPage, children: [{ path: ':id', component: DrawerStub }] }]),
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
@@ -120,5 +124,19 @@ describe('EmployeesPage', () => {
     harness.detectChanges();
 
     expect(harness.routeNativeElement!.textContent).toContain("Couldn't load employees");
+  });
+
+  it('opens an employee as a child route, keeping the current filters', async () => {
+    await open('/employees?country=IN&bandPosition=BELOW');
+    expectSearch().flush(page([TOM]));
+    harness.detectChanges();
+
+    (harness.routeNativeElement!.querySelector('tr.clickable') as HTMLElement).click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+
+    expect(TestBed.inject(Router).url).toBe('/employees/201?country=IN&bandPosition=BELOW');
+    http.expectNone((req) => req.url === '/api/employees'); // the list is not refetched
+    expect(harness.routeNativeElement!.querySelector('tr.open')).not.toBeNull();
   });
 });

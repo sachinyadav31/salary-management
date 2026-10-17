@@ -1,0 +1,214 @@
+:host {
+  position: fixed;
+  inset: 0;
+  // Modal layer: above sticky table headers (Material uses z-index 100) and the navigation rail.
+  z-index: 1000;
+  display: block;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(2 6 23 / 45%);
+  backdrop-filter: blur(2px);
+  animation: fade 200ms ease;
+}
+
+.drawer {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(560px, 100vw);
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 22px 22px 32px;
+  border-left: 1px solid var(--pa-border);
+  background: var(--pa-bg);
+  box-shadow: -24px 0 60px rgb(0 0 0 / 30%);
+  animation: slide 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes slide { from { transform: translateX(40px); opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+
+.card {
+  padding: 16px 18px;
+  border: 1px solid var(--pa-border);
+  border-radius: var(--pa-radius);
+  background: var(--pa-surface);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+
+  .who { flex: 1; min-width: 0; }
+  h2 { margin: 0; font-size: 22px; font-weight: 650; }
+  p { margin: 2px 0 0; }
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  font-weight: 650;
+  color: var(--pa-bg);
+  background: linear-gradient(135deg, var(--pa-accent), var(--pa-accent-2));
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px !important;
+  font-size: 12px;
+}
+
+.status {
+  padding: 0 8px;
+  border-radius: 999px;
+  color: var(--pa-within);
+  background: color-mix(in srgb, var(--pa-within) 12%, transparent);
+
+  &.inactive {
+    color: var(--pa-muted);
+    background: color-mix(in srgb, var(--pa-muted) 14%, transparent);
+  }
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.pay-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  .amount { font-size: 30px; font-weight: 650; line-height: 1.1; }
+  .compa { text-align: right; }
+}
+
+pa-band-bar.big {
+  transform: scaleY(1.4);
+  transform-origin: center;
+}
+
+.band-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h3 { margin: 0; font-size: 15px; font-weight: 650; }
+}
+
+.timeline {
+  height: 190px;
+  margin: 8px 0 4px;
+}
+
+.history {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: 96px 1fr auto;
+    align-items: baseline;
+    gap: 2px 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--pa-border);
+    font-size: 13px;
+
+    &.scheduled { color: var(--pa-muted); }
+  }
+
+  .when { color: var(--pa-muted); }
+  .reason { font-weight: 550; }
+  .what { text-align: right; font-weight: 600; }
+  .note { grid-column: 2 / -1; font-size: 12px; font-style: italic; }
+
+  .delta {
+    margin-left: 6px;
+    color: var(--pa-within);
+    font-size: 12px;
+    font-weight: 550;
+
+    &.down { color: var(--pa-below); }
+  }
+
+  .badge {
+    grid-column: 2;
+    justify-self: start;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    color: var(--pa-accent);
+    background: color-mix(in srgb, var(--pa-accent) 12%, transparent);
+  }
+}
+
+.details dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+
+  div { display: grid; grid-template-columns: 110px 1fr; gap: 12px; }
+  dt { color: var(--pa-muted); font-size: 13px; }
+  dd { margin: 0; overflow-wrap: anywhere; }
+}
+
+.state {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 30vh;
+  color: var(--pa-muted);
+
+  mat-icon { font-size: 40px; width: 40px; height: 40px; }
+  .actions { display: flex; gap: 8px; }
+}
+
+.skeleton {
+  display: grid;
+  gap: 14px;
+
+  .sk {
+    display: block;
+    border-radius: 12px;
+    background: linear-gradient(90deg, var(--pa-surface-2), color-mix(in srgb, var(--pa-surface-2) 40%, var(--pa-border)), var(--pa-surface-2));
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  .avatar-sk { width: 52px; height: 52px; }
+  .line { height: 18px; width: 60%; }
+  .block { height: 160px; }
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (max-width: 600px) {
+  .drawer { width: 100vw; padding: 16px 16px 96px; }
+}

@@ -92,7 +92,7 @@
             <div class="person">
               <span class="avatar" [style.--hue]="avatarHue(e)" aria-hidden="true">{{ initials(e) }}</span>
               <div>
-                <div class="name">{{ e.fullName }}</div>
+                <a class="name" [routerLink]="[e.id]" queryParamsHandling="preserve" (click)="$event.stopPropagation()">{{ e.fullName }}</a>
                 <div class="sub muted num">{{ e.employeeCode }} · {{ e.email }}</div>
               </div>
             </div>
@@ -140,7 +140,7 @@
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns" class="clickable" [class.open]="row.id === openId()" (click)="open(row)"></tr>
       </table>
     </div>
 
@@ -168,3 +168,5 @@
     </div>
   }
 </div>
+
+<router-outlet />

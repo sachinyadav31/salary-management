@@ -13,6 +13,13 @@ export const routes: Routes = [
     title: 'Employees · Pay Atlas',
     data: { heading: 'Employees', subheading: 'Search, filter and compare pay against bands' },
     loadComponent: () => import('./features/employees/employees-page').then((m) => m.EmployeesPage),
+    children: [
+      {
+        path: ':id',
+        title: 'Employee · Pay Atlas',
+        loadComponent: () => import('./features/employees/detail/employee-drawer').then((m) => m.EmployeeDrawer),
+      },
+    ],
   },
   { path: '**', redirectTo: 'insights' },
 ];

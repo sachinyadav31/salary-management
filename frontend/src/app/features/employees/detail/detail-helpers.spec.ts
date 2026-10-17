@@ -2,7 +2,7 @@ import { EmployeeDetail, Money, PayBand, SalaryHistoryItem } from '../../../core
 import { ChartPalette } from '../../../shared/charts/palette';
 import { profileChanges } from './profile-diff';
 import { parseAmount, previewChange, tenure } from './salary-preview';
-import { timelineOption } from './timeline-option';
+import { axisFormatter, timelineOption } from './timeline-option';
 
 const gbp = (minorUnits: number): Money => ({ minorUnits, currency: 'GBP', amount: (minorUnits / 100).toFixed(2) });
 const BAND: PayBand = { min: gbp(2_800_000), mid: gbp(3_500_000), max: gbp(4_200_000) };
@@ -78,17 +78,27 @@ describe('timelineOption', () => {
     const history = [item(3, '2027-04-01', 9_000_000, 'SCHEDULED'), item(2, '2025-04-01', 8_800_000, 'CURRENT'),
       item(1, '2024-01-15', 8_000_000, 'PAST')];
 
-    const [effective, scheduled] = timelineOption(history, palette)['series'] as
+    const [effective, scheduled] = timelineOption(history, palette, '2026-10-17')['series'] as
       { data: { value: [string, number] }[]; lineStyle: { type: string } }[];
 
-    expect(effective.data.map((d) => d.value)).toEqual([['2024-01-15', 80000], ['2025-04-01', 88000]]);
+    expect(effective.data.map((d) => d.value))
+      .toEqual([['2024-01-15', 80000], ['2025-04-01', 88000], ['2026-10-17', 88000]]);
     expect(effective.lineStyle.type).toBe('solid');
     expect(scheduled.data.map((d) => d.value[0])).toEqual(['2025-04-01', '2027-04-01']);
     expect(scheduled.lineStyle.type).toBe('dashed');
   });
 
-  it('has no dashed segment when nothing is scheduled', () => {
-    const [, scheduled] = timelineOption([item(1, '2024-01-15', 8_000_000, 'CURRENT')], palette)['series'] as { data: unknown[] }[];
+  it('turns a single hire record into a line up to today, with nothing dashed', () => {
+    const [effective, scheduled] = timelineOption([item(1, '2024-01-15', 8_000_000, 'CURRENT')], palette, '2026-10-17')['series'] as
+      { data: { value: [string, number] }[] }[];
+    expect(effective.data.map((d) => d.value)).toEqual([['2024-01-15', 80000], ['2026-10-17', 80000]]);
     expect(scheduled.data).toEqual([]);
+  });
+});
+
+describe('axisFormatter', () => {
+  it('keeps nearby ticks distinguishable', () => {
+    const jpy = axisFormatter('JPY');
+    expect([6_500_000, 6_550_000, 6_600_000].map(jpy)).toEqual(['¥6.5M', '¥6.55M', '¥6.6M']);
   });
 });

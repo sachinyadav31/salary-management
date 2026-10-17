@@ -1,0 +1,97 @@
+<div class="backdrop" (click)="close()" aria-hidden="true"></div>
+
+<aside class="drawer" role="dialog" aria-modal="true" [attr.aria-label]="employee()?.fullName ?? 'Employee'"
+       cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+  @if (employee(); as e) {
+    <header class="head">
+      <span class="avatar" aria-hidden="true">{{ initials(e) }}</span>
+      <div class="who">
+        <h2 class="display">{{ e.fullName }}</h2>
+        <p class="muted">{{ e.jobTitle }} · {{ e.level }} · {{ e.department }}</p>
+        <p class="meta muted num">
+          <span>{{ e.employeeCode }}</span>
+          <span><span aria-hidden="true">{{ flag(e.countryCode) }}</span> {{ e.countryName }}</span>
+          <span class="status" [class.inactive]="e.status === 'INACTIVE'">{{ e.status === 'ACTIVE' ? 'Active' : 'Inactive' }}</span>
+        </p>
+      </div>
+      <button mat-icon-button type="button" class="close" aria-label="Close" (click)="close()"><mat-icon>close</mat-icon></button>
+    </header>
+
+    <section class="pay card" aria-label="Current pay">
+      <div class="pay-top">
+        <div>
+          <span class="label muted">Current salary</span>
+          <div class="amount display num">{{ e.salary | money }}</div>
+          @if (e.salary.currency !== 'USD') {
+            <div class="muted num">≈ {{ e.salaryUsd | money }} per year</div>
+          } @else {
+            <div class="muted">per year</div>
+          }
+        </div>
+        <div class="compa">
+          <span class="label muted">Compa-ratio</span>
+          <pa-compa-badge [compa]="e.compaRatio" [position]="e.bandPosition" />
+        </div>
+      </div>
+      @if (e.payBand; as band) {
+        <pa-band-bar class="big" [salary]="e.salary" [band]="band" [position]="e.bandPosition" />
+        <div class="band-labels num muted">
+          <span>min {{ band.min | money }}</span>
+          <span>mid {{ band.mid | money }}</span>
+          <span>max {{ band.max | money }}</span>
+        </div>
+      }
+    </section>
+
+    <section class="card" aria-label="Salary history">
+      <div class="section-head">
+        <h3>Salary history</h3>
+      </div>
+      <div class="timeline">
+        @if (timeline(); as option) {
+          <pa-chart [option]="option" [ariaLabel]="'Salary over time for ' + e.fullName" />
+        }
+      </div>
+      <ol class="history">
+        @for (h of history(); track h.id) {
+          <li [class]="h.status.toLowerCase()">
+            <span class="when num">{{ h.effectiveDate | date: 'd MMM y' }}</span>
+            <span class="reason">{{ reason(h.reason) }}</span>
+            <span class="what num">
+              {{ h.amount | money }}
+              @if (h.changePercent !== null) {
+                <span class="delta" [class.down]="h.changePercent < 0">{{ h.changePercent > 0 ? '+' : '' }}{{ h.changePercent | number: '1.1-1' }}%</span>
+              }
+            </span>
+            @if (h.status !== 'PAST') {
+              <span class="badge">{{ h.status === 'CURRENT' ? 'Current' : 'Scheduled' }}</span>
+            }
+            @if (h.note) { <span class="note muted">“{{ h.note }}”</span> }
+          </li>
+        }
+      </ol>
+    </section>
+
+    <section class="card details" aria-label="Details">
+      <dl>
+        <div><dt>Email</dt><dd>{{ e.email }}</dd></div>
+        <div><dt>Hired</dt><dd>{{ e.hireDate | date: 'd MMM y' }} <span class="muted">· {{ tenure() }}</span></dd></div>
+        <div><dt>Country</dt><dd>{{ e.countryName }} <span class="muted">· paid in {{ e.salary.currency }}</span></dd></div>
+        <div><dt>Last updated</dt><dd>{{ e.updatedAt | date: 'd MMM y, HH:mm' }}</dd></div>
+      </dl>
+    </section>
+  } @else if (state().error) {
+    <div class="state">
+      <mat-icon>person_off</mat-icon>
+      <p>Couldn't load this employee.</p>
+      <div class="actions">
+        <button mat-button type="button" (click)="close()">Close</button>
+        <button mat-flat-button type="button" (click)="retry()">Try again</button>
+      </div>
+    </div>
+  } @else {
+    <div class="skeleton" aria-busy="true" aria-label="Loading employee">
+      <span class="sk avatar-sk"></span><span class="sk line"></span><span class="sk block"></span><span class="sk block"></span>
+    </div>
+  }
+</aside>
