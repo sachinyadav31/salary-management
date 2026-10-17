@@ -41,6 +41,7 @@ Replace ACME's Excel-based salary tracking with a web app where the **HR Manager
 | Excel / CSV bulk **import** | Valuable for migration, but needs mapping, validation reports and partial-failure handling. Export is in scope; import is the first candidate for the next iteration. |
 | Approval workflows, notifications | Multi-actor features with no second persona in the brief. |
 | AI natural-language querying | Dashboards and the outlier spotlight answer the stated questions predictably. Could be layered on the same aggregate API later. |
+| Job-family pay bands | v1 bands are country × level. The outlier spotlight shows Engineering clusters above band and Operations below, so per-job-family bands are the next iteration. |
 | Microservices, message queues, external cache | One user and 10k rows don't justify the operational cost. A modular monolith with clear feature boundaries can be split later if needed. |
 
 ## Non-functional

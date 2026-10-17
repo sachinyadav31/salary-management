@@ -41,6 +41,7 @@ Aggregates are computed in memory from a cached snapshot of the active workforce
 | `GET /api/insights/by-country` | — | 13 ms |
 | `GET /api/insights/by-title?country=IN` | — | 9 ms |
 | `GET /api/insights/distribution[?country=JP]` | — | 5 ms |
+| `GET /api/insights/outliers` (all rules over 10k) | — | 17 ms |
 
 **Why in memory:** medians need ordered data (SQLite has no `MEDIAN()`), and pure Java statistics are exact and unit
 tested. **Where it stops scaling:** fine to ~100k employees; beyond that, push aggregates into SQL or maintain

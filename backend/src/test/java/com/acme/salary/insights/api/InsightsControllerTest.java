@@ -70,4 +70,13 @@ class InsightsControllerTest {
                 .bodyJson().extractingPath("$.currency").isEqualTo("INR");
         assertThat(mvc.get().uri("/api/insights/distribution?department=99")).hasStatus(400);
     }
+
+    @Test
+    void outliersReturnRankedCardsWithDirectoryFilters() {
+        // 2 people is below the minimum group size, so the snapshot from setUp yields no cards
+        var json = assertThat(mvc.get().uri("/api/insights/outliers")).hasStatusOk().bodyJson();
+        json.extractingPath("$.data").asArray().isEmpty();
+        assertThat(mvc.get().uri("/api/insights/outliers?limit=0")).hasStatus(400);
+        assertThat(mvc.get().uri("/api/insights/outliers?limit=21")).hasStatus(400);
+    }
 }

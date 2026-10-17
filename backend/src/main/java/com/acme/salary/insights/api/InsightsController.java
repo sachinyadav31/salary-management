@@ -6,6 +6,8 @@ import com.acme.salary.insights.InsightsModels.Distribution;
 import com.acme.salary.insights.InsightsModels.Envelope;
 import com.acme.salary.insights.InsightsModels.Summary;
 import com.acme.salary.insights.InsightsModels.TitleInsight;
+import com.acme.salary.insights.OutlierDetector;
+import com.acme.salary.insights.OutlierDetector.OutlierCard;
 import com.acme.salary.insights.WorkforceSnapshot;
 import com.acme.salary.insights.WorkforceSnapshotCache;
 import com.acme.salary.reference.CountryRepository;
@@ -22,7 +24,10 @@ import java.util.List;
 @RequestMapping("/api/insights")
 public class InsightsController {
 
+    static final int MAX_OUTLIERS = 20;
+
     private final WorkforceSnapshotCache snapshots;
+    private final OutlierDetector outlierDetector = new OutlierDetector();
     private final CountryRepository countries;
     private final DepartmentRepository departments;
 
@@ -61,6 +66,16 @@ public class InsightsController {
             throw new IllegalArgumentException("Unknown department: " + departmentId);
         }
         return InsightsCalculator.distribution(snapshots.get(), country, departmentId);
+    }
+
+    /** Ranked "spotlight" cards; each carries the directory filter that lists the people behind it. */
+    @GetMapping("/outliers")
+    public Envelope<List<OutlierCard>> outliers(@RequestParam(defaultValue = "8") int limit) {
+        if (limit < 1 || limit > MAX_OUTLIERS) {
+            throw new IllegalArgumentException("limit must be between 1 and " + MAX_OUTLIERS);
+        }
+        WorkforceSnapshot snapshot = snapshots.get();
+        return envelope(snapshot, outlierDetector.detect(snapshot, limit));
     }
 
     private void requireCountry(String country) {

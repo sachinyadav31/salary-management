@@ -93,3 +93,14 @@ For each phase: plan → review the plan → implement test-first → run tests 
   payrolls fit easily; overflow fails loudly instead of wrapping", so the test now asserts `ArithmeticException`.
 - Integration tests with real commits: a committed hire appears on the next read; a rolled-back hire leaves the
   same cached snapshot in place.
+
+### Phase 10b — Outlier spotlight
+- Refined the plan before coding: measure every rule in compa-ratio points (1 point = 0.01), so
+  severity = people × points is comparable across rule types. The originally planned "max/min salary ≥ 1.6×" spread
+  rule became "compa range ≥ 0.50" (same band, so equivalent, but in the shared unit).
+- Department lag is org-wide (one card per department) to avoid eight near-identical per-country cards.
+- Guards: minimum group size 5 (noise and privacy), sorted group keys and an id tie-break for deterministic output.
+- Verified on 10k: the top underpaid card ("35 of 123 Operations Analysts in India") links to a filter that returns
+  exactly 35 people. The spotlight also exposes a real policy issue in the data: country × level bands don't fit
+  every job family (Engineering clusters above band, Operations below). That makes job-family bands the natural
+  next iteration.
