@@ -25,12 +25,14 @@ const SUMMARY: InsightsSummary = {
   asOf: '2026-10-17T08:00:00Z', fxRatesAsOf: '2026-10-01', reportingCurrency: 'USD', headcount: 9708, countries: 8,
   totalPayroll: usd(67968736600), averageSalary: usd(7001312), medianSalary: usd(6089100),
   bands: { below: 507, within: 8432, above: 769, withinPercent: 86.9, averageCompaRatio: 1.0 },
+  variablePayTarget: usd(7700000000), totalTargetCash: usd(75668736600), bonusesLast12Months: usd(5120000000),
 };
 
 const INDIA: CountryInsight = {
   countryCode: 'IN', countryName: 'India', currency: 'INR', headcount: 2919, payroll: inr(414292000000),
   payrollUsd: usd(4971504000), local: stats(inr, 125300000), usd: stats(usd, 1503600),
   bands: { below: 180, within: 2531, above: 208, withinPercent: 86.7, averageCompaRatio: 1.0 },
+  variablePayTargetUsd: usd(500000000), bonusesUsdLast12Months: usd(300000000),
 };
 
 const CARD: OutlierCard = {
@@ -87,7 +89,8 @@ describe('InsightsPage', () => {
     harness.detectChanges();
 
     expect(text()).toContain('across 8 countries');
-    expect(text()).toContain('average $70,013 per person');
+    expect(text()).toContain('$756.7M with variable pay at target');
+    expect(text()).toContain('Bonuses, last 12 months');
     expect(text()).toContain('507 below');
     expect(text()).toContain('769 above');
   });

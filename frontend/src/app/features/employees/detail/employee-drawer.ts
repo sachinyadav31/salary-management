@@ -14,7 +14,7 @@ import { Observable, Subject, forkJoin, map, merge, of, switchMap } from 'rxjs';
 import { EmployeeApi } from '../../../core/api/employee-api';
 import { MetaApi } from '../../../core/api/meta-api';
 import { problemMessage } from '../../../core/api/problem-interceptor';
-import { CareerEvent, EmployeeDetail, EmployeeStatus, ProblemDetail, SalaryChangeReason, SalaryHistoryItem } from '../../../core/api/models';
+import { AwardBonusRequest, Bonus, CareerEvent, EmployeeDetail, EmployeeStatus, ProblemDetail, SalaryChangeReason, SalaryHistoryItem } from '../../../core/api/models';
 import { BandBar } from '../../../shared/band-bar';
 import { Chart } from '../../../shared/charts/chart';
 import { ChartPalette, resolvePalette } from '../../../shared/charts/palette';
@@ -24,6 +24,7 @@ import { confirm } from '../../../shared/confirm-dialog';
 import { countryFlag } from '../../../shared/flag';
 import { LOADING, loadable } from '../../../shared/loadable';
 import { MoneyPipe, formatMoney } from '../../../shared/money';
+import { BonusForm } from './bonus-form';
 import { FieldChange, profileChanges } from './profile-diff';
 import { ProfileForm, ProfileInput } from './profile-form';
 import { SalaryChangeForm, SalaryChangeInput } from './salary-change-form';
@@ -31,12 +32,13 @@ import { tenure } from './salary-preview';
 import { buildTimeline, isPromotion } from './timeline';
 import { reasonLabel, timelineOption } from './timeline-option';
 
-export type DrawerMode = 'view' | 'salary' | 'edit';
+export type DrawerMode = 'view' | 'salary' | 'edit' | 'bonus';
 
 interface Loaded {
   employee: EmployeeDetail;
   history: SalaryHistoryItem[];
   events: CareerEvent[];
+  bonuses: Bonus[];
 }
 
 /** Employee detail as a routed drawer over the directory (/employees/:id keeps the list's filters). */
@@ -44,7 +46,7 @@ interface Loaded {
   selector: 'pa-employee-drawer',
   imports: [
     A11yModule, DatePipe, DecimalPipe, MatButtonModule, MatIconModule, MatTooltipModule,
-    BandBar, Chart, CompaBadge, MoneyPipe, ProfileForm, SalaryChangeForm,
+    BandBar, BonusForm, Chart, CompaBadge, MoneyPipe, ProfileForm, SalaryChangeForm,
   ],
   templateUrl: './employee-drawer.html',
   styleUrl: './employee-drawer.scss',
@@ -79,8 +81,9 @@ export class EmployeeDrawer implements CanLeave {
   protected readonly employee = computed(() => this.state().data?.employee ?? null);
   protected readonly history = computed(() => this.state().data?.history ?? []);
   private readonly events = computed(() => this.state().data?.events ?? []);
-  /** Salary changes and career events in one list. */
-  protected readonly timelineItems = computed(() => buildTimeline(this.history(), this.events()));
+  private readonly bonuses = computed(() => this.state().data?.bonuses ?? []);
+  /** Salary changes, bonuses and career events in one list. */
+  protected readonly timelineItems = computed(() => buildTimeline(this.history(), this.events(), this.bonuses()));
   /** Set after a level increase: suggest recording the raise that comes with the promotion. */
   protected readonly promotion = signal<{ from: string; to: string } | null>(null);
   /** Reason pre-selected when the salary form opens (e.g. PROMOTION from the prompt). */
@@ -93,6 +96,7 @@ export class EmployeeDrawer implements CanLeave {
 
   private readonly salaryForm = viewChild(SalaryChangeForm);
   private readonly profileForm = viewChild(ProfileForm);
+  private readonly bonusForm = viewChild(BonusForm);
 
   private readonly palette = signal<ChartPalette | null>(null);
   protected readonly timeline = computed(() => {
@@ -161,7 +165,7 @@ export class EmployeeDrawer implements CanLeave {
     this.write(
       this.api.recordSalaryChange(employee.id, { ...input, version: employee.version }),
       (response) => {
-        this.accept({ employee: response.employee, history: response.history, events: this.events() });
+        this.accept({ employee: response.employee, history: response.history, events: this.events(), bonuses: this.bonuses() });
         const scheduled = response.history.find((h) => h.status === 'SCHEDULED' && h.effectiveDate === input.effectiveDate);
         this.notify(scheduled
           ? `Scheduled: ${formatMoney(scheduled.amount)} from ${input.effectiveDate}`
@@ -176,7 +180,7 @@ export class EmployeeDrawer implements CanLeave {
       switchMap((updated) => this.api.careerEvents(employee.id).pipe(map((events) => ({ updated, events })))),
     );
     this.write(request, ({ updated, events }) => {
-      this.accept({ employee: updated, history: this.history(), events });
+      this.accept({ employee: updated, history: this.history(), events, bonuses: this.bonuses() });
       this.notify('Profile saved');
       if (isPromotion(employee.level, updated.level)) {
         this.promotion.set({ from: employee.level, to: updated.level });
@@ -200,7 +204,7 @@ export class EmployeeDrawer implements CanLeave {
         switchMap((updated) => this.api.careerEvents(employee.id).pipe(map((events) => ({ updated, events })))),
       );
       this.write(request, ({ updated, events }) => {
-        this.accept({ employee: updated, history: this.history(), events });
+        this.accept({ employee: updated, history: this.history(), events, bonuses: this.bonuses() });
         this.notify(status === 'INACTIVE' ? `${updated.fullName} deactivated` : `${updated.fullName} reactivated`);
       });
     });
@@ -251,16 +255,31 @@ export class EmployeeDrawer implements CanLeave {
     });
   }
 
+  protected saveBonus(input: AwardBonusRequest): void {
+    const employee = this.employee()!;
+    const request = this.api.awardBonus(employee.id, input).pipe(
+      switchMap((bonuses) => this.api.get(employee.id).pipe(map((latest) => ({ latest, bonuses })))),
+    );
+    this.write(request, ({ latest, bonuses }) => {
+      this.accept({ employee: latest, history: this.history(), events: this.events(), bonuses });
+      this.notify(`Bonus recorded for ${employee.firstName}`);
+    });
+  }
+
   protected recordPromotionRaise(): void {
     this.startEdit('salary', 'PROMOTION');
   }
 
   private loadAll(id: number): Observable<Loaded> {
-    return forkJoin({ employee: this.api.get(id), history: this.api.history(id), events: this.api.careerEvents(id) });
+    return forkJoin({
+      employee: this.api.get(id), history: this.api.history(id), events: this.api.careerEvents(id), bonuses: this.api.bonuses(id),
+    });
   }
 
   private confirmDiscard(): Observable<boolean> {
-    const dirty = (this.mode() === 'salary' && this.salaryForm()?.isDirty()) || (this.mode() === 'edit' && this.profileForm()?.isDirty());
+    const dirty = (this.mode() === 'salary' && this.salaryForm()?.isDirty())
+      || (this.mode() === 'edit' && this.profileForm()?.isDirty())
+      || (this.mode() === 'bonus' && this.bonusForm()?.isDirty());
     return dirty
       ? confirm(this.dialog, { title: 'Discard changes?', message: 'Your unsaved input will be lost.', confirm: 'Discard', cancel: 'Keep editing', danger: true })
       : of(true);

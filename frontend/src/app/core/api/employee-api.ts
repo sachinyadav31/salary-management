@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { handlesErrors } from './problem-interceptor';
 import {
-  CareerEvent, EmployeeDetail, EmployeeStatus, EmployeeSummary, PageResponse, RecordSalaryChangeRequest, SalaryChangeResponse,
+  AwardBonusRequest, Bonus, CareerEvent, EmployeeDetail, EmployeeStatus, EmployeeSummary, PageResponse, RecordSalaryChangeRequest, SalaryChangeResponse,
   SalaryHistoryItem, UpdateEmployeeRequest,
 } from './models';
 
@@ -27,6 +27,15 @@ export class EmployeeApi {
 
   get(id: number): Observable<EmployeeDetail> {
     return this.http.get<EmployeeDetail>(`/api/employees/${id}`);
+  }
+
+  bonuses(id: number): Observable<Bonus[]> {
+    return this.http.get<Bonus[]>(`/api/employees/${id}/bonuses`);
+  }
+
+  /** Returns the updated list of bonuses. */
+  awardBonus(id: number, body: AwardBonusRequest): Observable<Bonus[]> {
+    return this.http.post<Bonus[]>(`/api/employees/${id}/bonuses`, body, { context: handlesErrors() });
   }
 
   careerEvents(id: number): Observable<CareerEvent[]> {

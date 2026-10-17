@@ -29,4 +29,14 @@ describe('career timeline', () => {
       'salary 3', 'Promoted L2 → L3', 'Title: A → B', 'salary 2', 'salary 1',
     ]);
   });
+
+  it('places bonuses between salary changes and career events on the same day, with unique keys', () => {
+    const bonus = { id: 3, type: 'SPOT' as const, amount: { minorUnits: 1, currency: 'INR', amount: '0.01' },
+      awardedOn: '2026-10-17', note: 'Great work', recordedBy: 'Priya Sharma' };
+
+    const timeline = buildTimeline([salary(3, '2026-10-17')], [event(3, 'VARIABLE_TARGET_CHANGED', '2026-10-17T05:00:00Z', '10%', '15%')], [bonus]);
+
+    expect(timeline.map((t) => (t.kind === 'salary' ? 'salary' : t.title))).toEqual(['salary', 'Spot bonus', 'Variable pay target 10% → 15%']);
+    expect(new Set(timeline.map((t) => t.key)).size).toBe(3);
+  });
 });

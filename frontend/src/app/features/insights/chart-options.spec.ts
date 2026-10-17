@@ -17,6 +17,7 @@ function country(code: string, payrollMinor: number, withinPercent: number): Cou
     countryCode: code, countryName: code, currency: 'USD', headcount: 100, payroll: usd(payrollMinor),
     payrollUsd: usd(payrollMinor), local: stats, usd: stats,
     bands: { below: 5, within: 90, above: 5, withinPercent, averageCompaRatio: 1 },
+    variablePayTargetUsd: usd(0), bonusesUsdLast12Months: usd(0),
   };
 }
 

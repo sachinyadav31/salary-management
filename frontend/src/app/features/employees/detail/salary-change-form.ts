@@ -15,7 +15,7 @@ import { reasonLabel } from './timeline-option';
 
 export type SalaryChangeInput = Omit<RecordSalaryChangeRequest, 'version'>;
 
-const REASONS: Exclude<SalaryChangeReason, 'HIRE'>[] = ['ANNUAL_REVIEW', 'PROMOTION', 'MARKET_ADJUSTMENT', 'CORRECTION'];
+const REASONS: Exclude<SalaryChangeReason, 'HIRE'>[] = ['ANNUAL_REVIEW', 'MERIT', 'PROMOTION', 'MARKET_ADJUSTMENT', 'CORRECTION'];
 const AMOUNT_ERRORS: Record<string, string> = {
   required: 'Enter the new annual salary',
   invalid: 'Use digits only, e.g. 95000.50',

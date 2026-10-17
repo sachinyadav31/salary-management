@@ -1,0 +1,47 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="form card" aria-label="Award a bonus" novalidate>
+  <h3>Award a bonus</h3>
+  <p class="muted note">A one-off award. It doesn't change base salary or compa-ratio.</p>
+
+  <div class="row">
+    <mat-form-field appearance="outline" class="grow">
+      <mat-label>Type</mat-label>
+      <mat-select formControlName="type">
+        @for (t of types; track t) { <mat-option [value]="t">{{ label(t) }}</mat-option> }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Award date</mat-label>
+      <input matInput type="date" formControlName="awardedOn" [min]="employee().hireDate" [max]="maxDate" />
+      @if (error('awardedOn'); as m) { <mat-error>{{ m }}</mat-error> }
+    </mat-form-field>
+  </div>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Amount ({{ employee().salary.currency }})</mat-label>
+    <input matInput formControlName="amount" inputmode="decimal" autocomplete="off" />
+    <mat-hint>Variable target {{ employee().variableTarget | money }} ({{ employee().variableTargetPercent }}% of base)</mat-hint>
+    @if (error('amount'); as m) { <mat-error>{{ m }}</mat-error> }
+  </mat-form-field>
+
+  @if (context(); as c) {
+    <div class="preview within" aria-live="polite">
+      ≈ <strong class="num">{{ c.ofBase | number: '1.1-1' }}%</strong> of base salary
+      @if (c.ofTarget !== null) { · <strong class="num">{{ c.ofTarget | number: '1.0-0' }}%</strong> of the variable-pay target }
+    </div>
+  }
+
+  <mat-form-field appearance="outline">
+    <mat-label>Note{{ form.controls.type.value === 'SPOT' ? ' (required for spot bonuses)' : ' (optional)' }}</mat-label>
+    <textarea matInput formControlName="note" rows="2" placeholder="What does this recognise?"></textarea>
+    @if (error('note'); as m) { <mat-error>{{ m }}</mat-error> }
+  </mat-form-field>
+
+  @if (serverErrors()?.['_form']; as message) {
+    <p class="form-error" role="alert">{{ message }}</p>
+  }
+
+  <div class="actions">
+    <button mat-button type="button" (click)="cancelled.emit()">Cancel</button>
+    <button mat-flat-button type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Award bonus' }}</button>
+  </div>
+</form>

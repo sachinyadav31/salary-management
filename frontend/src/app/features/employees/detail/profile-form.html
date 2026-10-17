@@ -36,6 +36,14 @@
   </div>
 
   <mat-form-field appearance="outline">
+    <mat-label>Variable pay target</mat-label>
+    <input matInput type="number" min="0" max="100" step="0.5" formControlName="variableTargetPercent" />
+    <span matTextSuffix>% of base</span>
+    <mat-hint>Bonus at 100% performance, as a share of base salary</mat-hint>
+    @if (error('variableTargetPercent'); as m) { <mat-error>{{ m }}</mat-error> }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
     <mat-label>Job title</mat-label>
     <input matInput formControlName="jobTitle" [matAutocomplete]="titles" autocomplete="off" />
     <mat-autocomplete #titles="matAutocomplete">

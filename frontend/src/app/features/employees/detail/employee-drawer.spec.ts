@@ -26,6 +26,7 @@ const ADA: EmployeeDetail = {
   salary: gbp(8_000_000), salaryUsd: { minorUnits: 10_160_000, currency: 'USD', amount: '101600.00' },
   payBand: { min: gbp(4_760_000), mid: gbp(5_950_000), max: gbp(7_140_000) }, compaRatio: 1.34, bandPosition: 'ABOVE',
   version: 3, createdAt: '2024-01-15T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', updatedBy: null,
+  variableTargetPercent: 10, variableTarget: gbp(800_000), totalTargetCash: gbp(8_800_000), bonusesLast12Months: gbp(150_000),
 };
 
 const HISTORY: SalaryHistoryItem[] = [
@@ -61,6 +62,7 @@ describe('EmployeeDrawer', () => {
     http.expectOne('/api/employees/7').flush(ADA);
     http.expectOne('/api/employees/7/salary-history').flush(HISTORY);
     http.expectOne('/api/employees/7/career-events').flush([]);
+    http.expectOne('/api/employees/7/bonuses').flush([]);
     harness.detectChanges();
   }
 
@@ -96,6 +98,36 @@ describe('EmployeeDrawer', () => {
     expect(text()).toContain('£80,000');
     expect(text()).toContain('Hire');
     expect(text()).toContain('From initial data import');
+    expect(text()).toContain('Total target cash');
+    expect(text()).toContain('£88,000');
+  });
+
+  it('awards a bonus: spot bonuses need a note, and the award joins the timeline', async () => {
+    await open();
+    button('Award bonus').click();
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+    type('input[formcontrolname=amount]', '1500');
+    type('input[formcontrolname=awardedOn]', '2026-10-01');
+    submit();
+    http.expectNone('/api/employees/7/bonuses');
+    expect(text()).toContain('Say what this bonus recognises');
+
+    const note = root().querySelector('textarea[formcontrolname=note]') as HTMLTextAreaElement;
+    note.value = 'Shipped the audit trail';
+    note.dispatchEvent(new Event('input'));
+    harness.detectChanges();
+    expect(text()).toMatch(/1\.9%\s*of base salary/);
+    submit();
+
+    const award = http.expectOne((req) => req.url === '/api/employees/7/bonuses' && req.method === 'POST');
+    expect(award.request.body).toEqual({ type: 'SPOT', amount: '1500.00', awardedOn: '2026-10-01', note: 'Shipped the audit trail' });
+    award.flush([{ id: 5, type: 'SPOT', amount: gbp(150_000), awardedOn: '2026-10-01', note: 'Shipped the audit trail', recordedBy: 'Priya Sharma' }]);
+    http.expectOne('/api/employees/7').flush(ADA);
+    harness.detectChanges();
+
+    expect(text()).toMatch(/Spot bonus\s*£1,500/);
+    expect(text()).toMatch(/Shipped the audit trail”\s*by Priya Sharma/);
   });
 
   it('after a promotion, offers to record the raise with the reason pre-selected', async () => {
@@ -155,6 +187,7 @@ describe('EmployeeDrawer', () => {
     http.expectOne('/api/employees/7').flush({ ...ADA, jobTitle: 'Staff Engineer', level: 'L4', version: 4 });
     http.expectOne('/api/employees/7/salary-history').flush(HISTORY);
     http.expectOne('/api/employees/7/career-events').flush([]);
+    http.expectOne('/api/employees/7/bonuses').flush([]);
     harness.detectChanges();
 
     expect(text()).toContain('was updated by someone else');

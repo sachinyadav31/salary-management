@@ -52,6 +52,10 @@
         <pa-salary-change-form [employee]="e" [initialReason]="salaryReason()" [serverErrors]="serverErrors()" [saving]="saving()"
                                (submitted)="saveSalaryChange($event)" (cancelled)="cancelEdit()" />
       }
+      @case ('bonus') {
+        <pa-bonus-form [employee]="e" [serverErrors]="serverErrors()" [saving]="saving()"
+                       (submitted)="saveBonus($event)" (cancelled)="cancelEdit()" />
+      }
       @case ('edit') {
         <pa-profile-form [employee]="e" [meta]="meta()" [serverErrors]="serverErrors()" [saving]="saving()"
                          (submitted)="saveProfile($event)" (cancelled)="cancelEdit()" />
@@ -60,6 +64,7 @@
         <div class="actions">
           @if (e.status === 'ACTIVE') {
             <button mat-flat-button type="button" (click)="startEdit('salary')"><mat-icon>payments</mat-icon> Record salary change</button>
+            <button mat-stroked-button type="button" (click)="startEdit('bonus')"><mat-icon>redeem</mat-icon> Award bonus</button>
             <button mat-stroked-button type="button" (click)="startEdit('edit')"><mat-icon>edit</mat-icon> Edit profile</button>
             <button mat-button type="button" class="danger" (click)="changeStatus('INACTIVE')">Deactivate</button>
           } @else {
@@ -95,6 +100,11 @@
           <span>max {{ band.max | money }}</span>
         </div>
       }
+      <dl class="comp">
+        <div><dt>Variable pay target</dt><dd class="num">{{ e.variableTargetPercent }}% · {{ e.variableTarget | money }}</dd></div>
+        <div><dt>Total target cash</dt><dd class="num">{{ e.totalTargetCash | money }}</dd></div>
+        <div><dt>Bonuses, last 12 months</dt><dd class="num">{{ e.bonusesLast12Months | money }}</dd></div>
+      </dl>
     </section>
 
     <section class="card" aria-label="Salary history">
@@ -107,7 +117,7 @@
         }
       </div>
       <ol class="history">
-        @for (t of timelineItems(); track t.kind + (t.kind === 'salary' ? t.item.id : t.event.id)) {
+        @for (t of timelineItems(); track t.key) {
           @if (t.kind === 'salary') {
             @let h = t.item;
             <li [class]="h.status.toLowerCase()">
@@ -124,6 +134,14 @@
               }
               @if (h.note) { <span class="note muted">“{{ h.note }}”</span> }
               <span class="by muted">{{ h.recordedBy ? 'by ' + h.recordedBy : 'From initial data import' }}</span>
+            </li>
+          } @else if (t.kind === 'bonus') {
+            <li class="bonus">
+              <span class="when num">{{ t.bonus.awardedOn | date: 'd MMM y' }}</span>
+              <span class="reason"><mat-icon>redeem</mat-icon>{{ t.title }}</span>
+              <span class="what num">{{ t.bonus.amount | money }}</span>
+              @if (t.bonus.note) { <span class="note muted">“{{ t.bonus.note }}”</span> }
+              <span class="by muted">{{ t.bonus.recordedBy ? 'by ' + t.bonus.recordedBy : 'From initial data import' }}</span>
             </li>
           } @else {
             <li class="career">

@@ -7,6 +7,7 @@ const REASON_LABEL: Record<SalaryHistoryItem['reason'], string> = {
   HIRE: 'Hire',
   PROMOTION: 'Promotion',
   ANNUAL_REVIEW: 'Annual review',
+  MERIT: 'Merit raise',
   MARKET_ADJUSTMENT: 'Market adjustment',
   CORRECTION: 'Correction',
 };

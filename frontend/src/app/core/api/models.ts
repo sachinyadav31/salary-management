@@ -86,6 +86,25 @@ export interface BandSplit {
   averageCompaRatio: number | null;
 }
 
+export type BonusType = 'PERFORMANCE' | 'SPOT' | 'SIGN_ON' | 'RETENTION';
+
+export interface Bonus {
+  id: number;
+  type: BonusType;
+  amount: Money;
+  awardedOn: string;
+  note: string | null;
+  recordedBy: string | null;
+}
+
+export interface AwardBonusRequest {
+  type: BonusType;
+  /** Decimal string in the employee's currency. */
+  amount: string;
+  awardedOn: string;
+  note: string | null;
+}
+
 export interface InsightsSummary {
   asOf: string;
   fxRatesAsOf: string;
@@ -96,6 +115,9 @@ export interface InsightsSummary {
   averageSalary: Money | null;
   medianSalary: Money | null;
   bands: BandSplit;
+  variablePayTarget: Money;
+  totalTargetCash: Money;
+  bonusesLast12Months: Money;
 }
 
 export interface CountryInsight {
@@ -108,6 +130,8 @@ export interface CountryInsight {
   local: PayStats;
   usd: PayStats;
   bands: BandSplit;
+  variablePayTargetUsd: Money;
+  bonusesUsdLast12Months: Money;
 }
 
 export interface DistributionBucket {
@@ -152,9 +176,15 @@ export interface EmployeeDetail extends EmployeeSummary {
   updatedAt: string;
   /** Who last edited the employee; null if never edited by a person (seed data). */
   updatedBy: string | null;
+  /** Variable pay target as % of base, e.g. 12.5. */
+  variableTargetPercent: number;
+  variableTarget: Money;
+  /** Base + variable pay at 100% of target. */
+  totalTargetCash: Money;
+  bonusesLast12Months: Money;
 }
 
-export type SalaryChangeReason = 'HIRE' | 'PROMOTION' | 'ANNUAL_REVIEW' | 'MARKET_ADJUSTMENT' | 'CORRECTION';
+export type SalaryChangeReason = 'HIRE' | 'PROMOTION' | 'ANNUAL_REVIEW' | 'MERIT' | 'MARKET_ADJUSTMENT' | 'CORRECTION';
 export type HistoryStatus = 'PAST' | 'CURRENT' | 'SCHEDULED';
 
 export interface SalaryHistoryItem {
@@ -176,6 +206,7 @@ export interface UpdateEmployeeRequest {
   departmentId: number;
   jobTitle: string;
   level: JobLevel;
+  variableTargetPercent: number;
   version: number;
 }
 
@@ -193,7 +224,7 @@ export interface SalaryChangeResponse {
   history: SalaryHistoryItem[];
 }
 
-export type CareerEventType = 'LEVEL_CHANGED' | 'TITLE_CHANGED' | 'DEPARTMENT_CHANGED' | 'DEACTIVATED' | 'REACTIVATED';
+export type CareerEventType = 'LEVEL_CHANGED' | 'TITLE_CHANGED' | 'DEPARTMENT_CHANGED' | 'VARIABLE_TARGET_CHANGED' | 'DEACTIVATED' | 'REACTIVATED';
 
 export interface CareerEvent {
   id: number;

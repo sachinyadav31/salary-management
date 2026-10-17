@@ -33,6 +33,10 @@ export class ProfileForm {
     departmentId: new FormControl(0, { nonNullable: true, validators: Validators.required }),
     jobTitle: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
     level: new FormControl<JobLevel>('L1', { nonNullable: true }),
+    variableTargetPercent: new FormControl(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0), Validators.max(100), Validators.pattern(/^\d{1,3}(\.\d{1,2})?$/)],
+    }),
   });
 
   private readonly title = toSignal(this.form.controls.jobTitle.valueChanges, { initialValue: '' });
@@ -52,6 +56,7 @@ export class ProfileForm {
         this.form.reset({
           firstName: e.firstName, lastName: e.lastName, email: e.email,
           departmentId: e.departmentId, jobTitle: e.jobTitle, level: e.level,
+          variableTargetPercent: e.variableTargetPercent,
         });
       }
     });
@@ -76,6 +81,7 @@ export class ProfileForm {
     if (errors['required']) return 'Required';
     if (errors['email']) return 'Enter a valid email address';
     if (errors['maxlength']) return 'Too long';
+    if (errors['min'] || errors['max'] || errors['pattern']) return 'Between 0 and 100, at most two decimals';
     return null;
   }
 

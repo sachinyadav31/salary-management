@@ -16,7 +16,7 @@
     <span class="kpi-label"><mat-icon>payments</mat-icon> Annual payroll</span>
     @if (summary().data; as s) {
       <pa-count-up class="kpi-value display" [value]="s.totalPayroll.minorUnits" [format]="formatUsdCompact" />
-      <span class="kpi-sub muted">average {{ s.averageSalary | money }} per person</span>
+      <span class="kpi-sub muted">base pay · {{ s.totalTargetCash | money: 'compact' }} with variable pay at target</span>
     } @else if (!summary().error) {
       <span class="skeleton-line wide"></span>
     }
@@ -27,6 +27,16 @@
     @if (summary().data; as s) {
       <pa-count-up class="kpi-value display" [value]="s.medianSalary?.minorUnits ?? 0" [format]="formatUsd" />
       <span class="kpi-sub muted">half of ACME earns less than this (USD)</span>
+    } @else if (!summary().error) {
+      <span class="skeleton-line wide"></span>
+    }
+  </article>
+
+  <article class="card kpi">
+    <span class="kpi-label"><mat-icon>redeem</mat-icon> Bonuses, last 12 months</span>
+    @if (summary().data; as s) {
+      <pa-count-up class="kpi-value display" [value]="s.bonusesLast12Months.minorUnits" [format]="formatUsdCompact" />
+      <span class="kpi-sub muted">performance payouts, spot, sign-on and retention</span>
     } @else if (!summary().error) {
       <span class="skeleton-line wide"></span>
     }
@@ -142,6 +152,7 @@
             <th scope="col">Country</th>
             <th scope="col" class="right">People</th>
             <th scope="col">Payroll (USD)</th>
+            <th scope="col" class="right">Bonuses (12 mo)</th>
             <th scope="col" class="right">Median salary</th>
             <th scope="col">Band split</th>
             <th scope="col" class="center">Avg compa</th>
@@ -168,6 +179,7 @@
                   <span class="muted num">{{ payrollShare(c) | number: '1.0-0' }}%</span>
                 </div>
               </td>
+              <td class="right num">{{ c.bonusesUsdLast12Months | money: 'compact' }}</td>
               <td class="right num">
                 <div>{{ c.local.median | money }}</div>
                 @if (c.currency !== 'USD') { <div class="muted sub">≈ {{ c.usd.median | money }}</div> }
