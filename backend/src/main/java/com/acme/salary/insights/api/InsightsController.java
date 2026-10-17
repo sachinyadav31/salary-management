@@ -15,12 +15,15 @@ import com.acme.salary.reference.DepartmentRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 /** "How does the org pay people?" Every response is computed from the cached workforce snapshot. */
 @RestController
+@Tag(name = "Insights", description = "How the organisation pays people")
 @RequestMapping("/api/insights")
 public class InsightsController {
 
@@ -38,17 +41,20 @@ public class InsightsController {
         this.departments = departments;
     }
 
+    @Operation(summary = "Org-wide headcount, payroll and band health (USD)")
     @GetMapping("/summary")
     public Summary summary() {
         return InsightsCalculator.summary(snapshots.get());
     }
 
+    @Operation(summary = "Pay statistics per country, local and USD")
     @GetMapping("/by-country")
     public Envelope<List<CountryInsight>> byCountry() {
         WorkforceSnapshot snapshot = snapshots.get();
         return envelope(snapshot, InsightsCalculator.byCountry(snapshot));
     }
 
+    @Operation(summary = "Pay statistics per job title within one country")
     @GetMapping("/by-title")
     public Envelope<List<TitleInsight>> byTitle(@RequestParam String country) {
         requireCountry(country);
@@ -56,6 +62,7 @@ public class InsightsController {
         return envelope(snapshot, InsightsCalculator.byTitle(snapshot, country));
     }
 
+    @Operation(summary = "Salary histogram (local for one country, else USD)")
     @GetMapping("/distribution")
     public Distribution distribution(@RequestParam(required = false) String country,
                                      @RequestParam(name = "department", required = false) Long departmentId) {
@@ -69,6 +76,7 @@ public class InsightsController {
     }
 
     /** Ranked "spotlight" cards; each carries the directory filter that lists the people behind it. */
+    @Operation(summary = "Ranked outlier spotlight cards with directory filters")
     @GetMapping("/outliers")
     public Envelope<List<OutlierCard>> outliers(@RequestParam(defaultValue = "8") int limit) {
         if (limit < 1 || limit > MAX_OUTLIERS) {

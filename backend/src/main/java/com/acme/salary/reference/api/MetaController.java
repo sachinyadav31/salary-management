@@ -7,11 +7,14 @@ import com.acme.salary.reference.api.MetaResponse.CountryView;
 import com.acme.salary.reference.api.MetaResponse.DepartmentView;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
+@Tag(name = "Reference data", description = "Countries, departments, titles and levels for filters")
 public class MetaController {
 
     private final JdbcTemplate jdbc;
@@ -20,6 +23,7 @@ public class MetaController {
         this.jdbc = jdbc;
     }
 
+    @Operation(summary = "Reference data for filters and forms")
     @GetMapping("/api/meta")
     public MetaResponse meta() {
         return new MetaResponse(

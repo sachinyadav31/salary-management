@@ -114,3 +114,11 @@ For each phase: plan → review the plan → implement test-first → run tests 
   record bound from the query string.
 - Verified: 10k rows / 1.7 MB in 171 ms, chunked (streamed); the filtered export of a spotlight card returns exactly
   the card's 35 people.
+
+### Phase 11b — OpenAPI / Swagger UI
+- springdoc-openapi 3.1.1 (built against Spring Boot 4.1; checked the POM before adding it).
+- API-level description states the conventions once (exact money, USD reporting, RFC 7807, optimistic locking);
+  each controller gets a `@Tag`, and each endpoint a one-line `@Operation`.
+- `@ParameterObject` on the shared filter record, otherwise Swagger would show the directory filters as one opaque
+  object; a test asserts `country`, `level`, `bandPosition`, … appear as individual query parameters.
+- Opened `/swagger-ui.html` in the built-in browser to confirm it renders.

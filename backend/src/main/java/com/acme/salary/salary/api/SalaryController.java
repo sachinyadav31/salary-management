@@ -13,12 +13,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
 
 @RestController
+@Tag(name = "Salaries", description = "Effective-dated, append-only salary history")
 @RequestMapping("/api/employees/{employeeId}")
 public class SalaryController {
 
@@ -31,11 +34,13 @@ public class SalaryController {
     }
 
     /** Newest first, each with status (CURRENT / PAST / SCHEDULED) and % change from the previous entry. */
+    @Operation(summary = "Salary history, newest first, with % change and status")
     @GetMapping("/salary-history")
     public List<SalaryHistoryItem> history(@PathVariable long employeeId) {
         return salaryService.timeline(employeeId).stream().map(SalaryHistoryItem::from).toList();
     }
 
+    @Operation(summary = "Record a salary change (immediate, back-dated or scheduled)")
     @PostMapping("/salary-changes")
     public ResponseEntity<SalaryChangeResponse> recordChange(@PathVariable long employeeId,
                                                              @Valid @RequestBody RecordSalaryChangeRequest request) {
