@@ -35,9 +35,21 @@
       </div>
     }
 
+    @if (promotion(); as p) {
+      <div class="promotion" role="status">
+        <mat-icon>celebration</mat-icon>
+        <div>
+          <strong>Promoted {{ p.from }} → {{ p.to }}.</strong>
+          <p>Record the raise that comes with the promotion?</p>
+        </div>
+        <button mat-flat-button type="button" (click)="recordPromotionRaise()">Record raise</button>
+        <button mat-button type="button" (click)="promotion.set(null)">Not now</button>
+      </div>
+    }
+
     @switch (mode()) {
       @case ('salary') {
-        <pa-salary-change-form [employee]="e" [serverErrors]="serverErrors()" [saving]="saving()"
+        <pa-salary-change-form [employee]="e" [initialReason]="salaryReason()" [serverErrors]="serverErrors()" [saving]="saving()"
                                (submitted)="saveSalaryChange($event)" (cancelled)="cancelEdit()" />
       }
       @case ('edit') {
@@ -95,22 +107,32 @@
         }
       </div>
       <ol class="history">
-        @for (h of history(); track h.id) {
-          <li [class]="h.status.toLowerCase()">
-            <span class="when num">{{ h.effectiveDate | date: 'd MMM y' }}</span>
-            <span class="reason">{{ reason(h.reason) }}</span>
-            <span class="what num">
-              {{ h.amount | money }}
-              @if (h.changePercent !== null) {
-                <span class="delta" [class.down]="h.changePercent < 0">{{ h.changePercent > 0 ? '+' : '' }}{{ h.changePercent | number: '1.1-1' }}%</span>
+        @for (t of timelineItems(); track t.kind + (t.kind === 'salary' ? t.item.id : t.event.id)) {
+          @if (t.kind === 'salary') {
+            @let h = t.item;
+            <li [class]="h.status.toLowerCase()">
+              <span class="when num">{{ h.effectiveDate | date: 'd MMM y' }}</span>
+              <span class="reason">{{ reason(h.reason) }}</span>
+              <span class="what num">
+                {{ h.amount | money }}
+                @if (h.changePercent !== null) {
+                  <span class="delta" [class.down]="h.changePercent < 0">{{ h.changePercent > 0 ? '+' : '' }}{{ h.changePercent | number: '1.1-1' }}%</span>
+                }
+              </span>
+              @if (h.status !== 'PAST') {
+                <span class="badge">{{ h.status === 'CURRENT' ? 'Current' : 'Scheduled' }}</span>
               }
-            </span>
-            @if (h.status !== 'PAST') {
-              <span class="badge">{{ h.status === 'CURRENT' ? 'Current' : 'Scheduled' }}</span>
-            }
-            @if (h.note) { <span class="note muted">“{{ h.note }}”</span> }
-            <span class="by muted">{{ h.recordedBy ? 'by ' + h.recordedBy : 'imported' }}</span>
-          </li>
+              @if (h.note) { <span class="note muted">“{{ h.note }}”</span> }
+              <span class="by muted">{{ h.recordedBy ? 'by ' + h.recordedBy : 'From initial data import' }}</span>
+            </li>
+          } @else {
+            <li class="career">
+              <span class="when num">{{ t.event.occurredAt | date: 'd MMM y' }}</span>
+              <span class="reason"><mat-icon>{{ t.icon }}</mat-icon>{{ t.title }}</span>
+              <span class="what"></span>
+              <span class="by muted">{{ t.event.recordedBy ? 'by ' + t.event.recordedBy : 'System' }}</span>
+            </li>
+          }
         }
       </ol>
     </section>

@@ -192,3 +192,15 @@ export interface SalaryChangeResponse {
   employee: EmployeeDetail;
   history: SalaryHistoryItem[];
 }
+
+export type CareerEventType = 'LEVEL_CHANGED' | 'TITLE_CHANGED' | 'DEPARTMENT_CHANGED' | 'DEACTIVATED' | 'REACTIVATED';
+
+export interface CareerEvent {
+  id: number;
+  type: CareerEventType;
+  from: string | null;
+  to: string | null;
+  occurredAt: string;
+  /** Who made the change; null for system changes. */
+  recordedBy: string | null;
+}

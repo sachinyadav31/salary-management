@@ -9,12 +9,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject, forkJoin, map, merge, of } from 'rxjs';
+import { Observable, Subject, forkJoin, map, merge, of, switchMap } from 'rxjs';
 
 import { EmployeeApi } from '../../../core/api/employee-api';
 import { MetaApi } from '../../../core/api/meta-api';
 import { problemMessage } from '../../../core/api/problem-interceptor';
-import { EmployeeDetail, EmployeeStatus, ProblemDetail, SalaryHistoryItem } from '../../../core/api/models';
+import { CareerEvent, EmployeeDetail, EmployeeStatus, ProblemDetail, SalaryChangeReason, SalaryHistoryItem } from '../../../core/api/models';
 import { BandBar } from '../../../shared/band-bar';
 import { Chart } from '../../../shared/charts/chart';
 import { ChartPalette, resolvePalette } from '../../../shared/charts/palette';
@@ -28,6 +28,7 @@ import { FieldChange, profileChanges } from './profile-diff';
 import { ProfileForm, ProfileInput } from './profile-form';
 import { SalaryChangeForm, SalaryChangeInput } from './salary-change-form';
 import { tenure } from './salary-preview';
+import { buildTimeline, isPromotion } from './timeline';
 import { reasonLabel, timelineOption } from './timeline-option';
 
 export type DrawerMode = 'view' | 'salary' | 'edit';
@@ -35,6 +36,7 @@ export type DrawerMode = 'view' | 'salary' | 'edit';
 interface Loaded {
   employee: EmployeeDetail;
   history: SalaryHistoryItem[];
+  events: CareerEvent[];
 }
 
 /** Employee detail as a routed drawer over the directory (/employees/:id keeps the list's filters). */
@@ -67,7 +69,7 @@ export class EmployeeDrawer implements CanLeave {
     merge(
       loadable(
         merge(toObservable(this.id), this.reload.pipe(map(() => this.id()))).pipe(map(Number)),
-        (id) => forkJoin({ employee: this.api.get(id), history: this.api.history(id) }),
+        (id) => this.loadAll(id),
       ),
       this.replaced.pipe(map((data) => ({ loading: false, error: false, data }))),
     ),
@@ -76,6 +78,13 @@ export class EmployeeDrawer implements CanLeave {
 
   protected readonly employee = computed(() => this.state().data?.employee ?? null);
   protected readonly history = computed(() => this.state().data?.history ?? []);
+  private readonly events = computed(() => this.state().data?.events ?? []);
+  /** Salary changes and career events in one list. */
+  protected readonly timelineItems = computed(() => buildTimeline(this.history(), this.events()));
+  /** Set after a level increase: suggest recording the raise that comes with the promotion. */
+  protected readonly promotion = signal<{ from: string; to: string } | null>(null);
+  /** Reason pre-selected when the salary form opens (e.g. PROMOTION from the prompt). */
+  protected readonly salaryReason = signal<Exclude<SalaryChangeReason, 'HIRE'>>('ANNUAL_REVIEW');
   protected readonly mode = signal<DrawerMode>('view');
   protected readonly saving = signal(false);
   protected readonly serverErrors = signal<Record<string, string> | null>(null);
@@ -124,7 +133,9 @@ export class EmployeeDrawer implements CanLeave {
     return (employee.firstName[0] + employee.lastName[0]).toUpperCase();
   }
 
-  protected startEdit(mode: Exclude<DrawerMode, 'view'>): void {
+  protected startEdit(mode: Exclude<DrawerMode, 'view'>, reason: Exclude<SalaryChangeReason, 'HIRE'> = 'ANNUAL_REVIEW'): void {
+    this.salaryReason.set(reason);
+    this.promotion.set(null);
     this.serverErrors.set(null);
     this.conflict.set(null);
     this.mode.set(mode);
@@ -150,7 +161,7 @@ export class EmployeeDrawer implements CanLeave {
     this.write(
       this.api.recordSalaryChange(employee.id, { ...input, version: employee.version }),
       (response) => {
-        this.accept({ employee: response.employee, history: response.history });
+        this.accept({ employee: response.employee, history: response.history, events: this.events() });
         const scheduled = response.history.find((h) => h.status === 'SCHEDULED' && h.effectiveDate === input.effectiveDate);
         this.notify(scheduled
           ? `Scheduled: ${formatMoney(scheduled.amount)} from ${input.effectiveDate}`
@@ -161,9 +172,15 @@ export class EmployeeDrawer implements CanLeave {
 
   protected saveProfile(input: ProfileInput): void {
     const employee = this.employee()!;
-    this.write(this.api.update(employee.id, { ...input, version: employee.version }), (updated) => {
-      this.accept({ employee: updated, history: this.history() });
+    const request = this.api.update(employee.id, { ...input, version: employee.version }).pipe(
+      switchMap((updated) => this.api.careerEvents(employee.id).pipe(map((events) => ({ updated, events })))),
+    );
+    this.write(request, ({ updated, events }) => {
+      this.accept({ employee: updated, history: this.history(), events });
       this.notify('Profile saved');
+      if (isPromotion(employee.level, updated.level)) {
+        this.promotion.set({ from: employee.level, to: updated.level });
+      }
     });
   }
 
@@ -179,8 +196,11 @@ export class EmployeeDrawer implements CanLeave {
       : of(true);
     proceed.subscribe((ok) => {
       if (!ok) return;
-      this.write(this.api.changeStatus(employee.id, status, employee.version), (updated) => {
-        this.accept({ employee: updated, history: this.history() });
+      const request = this.api.changeStatus(employee.id, status, employee.version).pipe(
+        switchMap((updated) => this.api.careerEvents(employee.id).pipe(map((events) => ({ updated, events })))),
+      );
+      this.write(request, ({ updated, events }) => {
+        this.accept({ employee: updated, history: this.history(), events });
         this.notify(status === 'INACTIVE' ? `${updated.fullName} deactivated` : `${updated.fullName} reactivated`);
       });
     });
@@ -222,13 +242,21 @@ export class EmployeeDrawer implements CanLeave {
    */
   private loadLatestAfterConflict(): void {
     const stale = this.employee()!;
-    forkJoin({ employee: this.api.get(stale.id), history: this.api.history(stale.id) }).subscribe({
+    this.loadAll(stale.id).subscribe({
       next: (latest) => {
         this.conflict.set(profileChanges(stale, latest.employee));
         this.accept(latest);
       },
       error: (error: HttpErrorResponse) => this.serverErrors.set({ _form: problemMessage(error) }),
     });
+  }
+
+  protected recordPromotionRaise(): void {
+    this.startEdit('salary', 'PROMOTION');
+  }
+
+  private loadAll(id: number): Observable<Loaded> {
+    return forkJoin({ employee: this.api.get(id), history: this.api.history(id), events: this.api.careerEvents(id) });
   }
 
   private confirmDiscard(): Observable<boolean> {

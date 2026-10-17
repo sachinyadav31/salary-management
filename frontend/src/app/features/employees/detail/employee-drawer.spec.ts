@@ -60,6 +60,7 @@ describe('EmployeeDrawer', () => {
     http.expectOne('/api/meta').flush({ departments: [{ id: 1, name: 'Engineering' }], levels: ['L3', 'L4'], jobTitles: [] });
     http.expectOne('/api/employees/7').flush(ADA);
     http.expectOne('/api/employees/7/salary-history').flush(HISTORY);
+    http.expectOne('/api/employees/7/career-events').flush([]);
     harness.detectChanges();
   }
 
@@ -94,6 +95,35 @@ describe('EmployeeDrawer', () => {
     expect(text()).toContain('Ada Lovelace');
     expect(text()).toContain('£80,000');
     expect(text()).toContain('Hire');
+    expect(text()).toContain('From initial data import');
+  });
+
+  it('after a promotion, offers to record the raise with the reason pre-selected', async () => {
+    await open();
+    button('Edit profile').click();
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+    const form = harness.fixture.debugElement.query((d) => d.name === 'pa-profile-form').componentInstance;
+    form.form.controls.level.setValue('L4');
+    form.form.markAsDirty();
+    harness.detectChanges();
+    submit();
+
+    const update = http.expectOne('/api/employees/7');
+    expect(update.request.method).toBe('PUT');
+    update.flush({ ...ADA, level: 'L4', version: 4 });
+    http.expectOne('/api/employees/7/career-events').flush([
+      { id: 1, type: 'LEVEL_CHANGED', from: 'L3', to: 'L4', occurredAt: '2026-10-17T06:00:00Z', recordedBy: 'Priya Sharma' },
+    ]);
+    harness.detectChanges();
+
+    expect(text()).toContain('Promoted L3 → L4.');
+    expect(text()).toMatch(/Promoted L3 → L4\s*by Priya Sharma/);
+    button('Record raise').click();
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+    const salaryForm = harness.fixture.debugElement.query((d) => d.name === 'pa-salary-change-form').componentInstance;
+    expect(salaryForm.form.controls.reason.value).toBe('PROMOTION');
   });
 
   it('previews and records a salary change with the loaded version', async () => {
@@ -124,6 +154,7 @@ describe('EmployeeDrawer', () => {
 
     http.expectOne('/api/employees/7').flush({ ...ADA, jobTitle: 'Staff Engineer', level: 'L4', version: 4 });
     http.expectOne('/api/employees/7/salary-history').flush(HISTORY);
+    http.expectOne('/api/employees/7/career-events').flush([]);
     harness.detectChanges();
 
     expect(text()).toContain('was updated by someone else');

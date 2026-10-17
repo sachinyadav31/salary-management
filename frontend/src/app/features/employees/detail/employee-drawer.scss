@@ -244,3 +244,28 @@ pa-band-bar.big {
   p { margin: 4px 0 0; font-size: 13px; }
   ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
 }
+
+.history li.career {
+  .reason {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--pa-accent);
+
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  }
+}
+
+.promotion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px 14px;
+  border-radius: var(--pa-radius);
+  color: var(--pa-lime-ink);
+  background: var(--pa-accent-2);
+
+  > div { flex: 1 1 200px; }
+  p { margin: 2px 0 0; font-size: 13px; }
+}

@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, effect, input, output } from '@angular/core';
+import { Component, computed, effect, input, output, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,6 +34,8 @@ const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 })
 export class SalaryChangeForm {
   readonly employee = input.required<EmployeeDetail>();
+  /** Reason pre-selected when the form opens (e.g. PROMOTION after a level increase). */
+  readonly initialReason = input<Exclude<SalaryChangeReason, 'HIRE'>>('ANNUAL_REVIEW');
   /** Field → message from a 400 response; `_form` for errors not tied to a field. */
   readonly serverErrors = input<Record<string, string> | null>(null);
   readonly saving = input(false);
@@ -76,6 +78,14 @@ export class SalaryChangeForm {
 
   constructor() {
     this.form.controls.reason.valueChanges.subscribe(() => this.form.controls.note.updateValueAndValidity());
+
+    // Apply the pre-selected reason once, without marking the form dirty.
+    effect(() => {
+      const reason = this.initialReason();
+      untracked(() => {
+        if (!this.form.dirty) this.form.controls.reason.setValue(reason, { emitEvent: true });
+      });
+    });
 
     // Re-validate when the employee changes (e.g. latest version loaded after a conflict).
     effect(() => {
