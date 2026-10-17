@@ -46,6 +46,7 @@ class DatabaseSeederTest {
         assertThat(inserted).isEqualTo(200);
         assertThat(count("employee")).isEqualTo(200);
         assertThat(count("salary_record")).isEqualTo(expectedRecords);
+        assertThat(count("bonus_award")).isEqualTo(employees.stream().mapToInt(e -> e.bonuses().size()).sum());
     }
 
     @Test

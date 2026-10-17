@@ -20,5 +20,6 @@ public record SeedEmployee(
         LocalDate hireDate,
         EmployeeStatus status,
         Money currentSalary,
-        List<SeedSalaryRecord> salaryHistory) {
+        List<SeedSalaryRecord> salaryHistory,
+        List<SeedBonus> bonuses) {
 }

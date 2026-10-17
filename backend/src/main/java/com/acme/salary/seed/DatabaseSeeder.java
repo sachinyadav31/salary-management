@@ -49,7 +49,8 @@ public class DatabaseSeeder {
         String now = clock.instant().toString();
 
         List<Object[]> employeeRows = new ArrayList<>(employees.size());
-        List<Object[]> salaryRows = new ArrayList<>(employees.size() * 2);
+        List<Object[]> salaryRows = new ArrayList<>(employees.size() * 6);
+        List<Object[]> bonusRows = new ArrayList<>(employees.size() * 2);
         long id = 1;
         for (SeedEmployee e : employees) {
             employeeRows.add(new Object[]{id, e.employeeCode(), e.firstName(), e.lastName(), e.email(),
@@ -57,6 +58,10 @@ public class DatabaseSeeder {
                     e.hireDate().toString(), e.status().name(), e.currentSalary().minorUnits(),
                     e.currentSalary().currencyCode(), converter.toUsd(e.currentSalary()).minorUnits(),
                     VariableTarget.defaultFor(e.departmentName(), e.level()).basisPoints(), now, now});
+            for (SeedBonus b : e.bonuses()) {
+                bonusRows.add(new Object[]{id, b.type().name(), b.amount().minorUnits(), b.amount().currencyCode(),
+                        b.awardedOn().toString(), b.note(), now});
+            }
             for (SeedSalaryRecord r : e.salaryHistory()) {
                 salaryRows.add(new Object[]{id, r.amount().minorUnits(), r.amount().currencyCode(),
                         r.effectiveDate().toString(), r.reason().name(), now});
@@ -73,8 +78,13 @@ public class DatabaseSeeder {
                 insert into salary_record (employee_id, amount_minor, currency_code, effective_date, reason, created_at)
                 values (?, ?, ?, ?, ?, ?)""", salaryRows);
 
+        jdbc.batchUpdate("""
+                insert into bonus_award (employee_id, type, amount_minor, currency_code, awarded_on, note, created_at)
+                values (?, ?, ?, ?, ?, ?, ?)""", bonusRows);
+
         events.publishEvent(new WorkforceChanged("seeded"));
-        log.info("Seeded {} employees and {} salary records in {} ms", employeeRows.size(), salaryRows.size(),
+        log.info("Seeded {} employees, {} salary records and {} bonuses in {} ms", employeeRows.size(), salaryRows.size(),
+                bonusRows.size(),
                 (System.nanoTime() - started) / 1_000_000);
         return employeeRows.size();
     }

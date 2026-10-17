@@ -97,4 +97,22 @@ class InsightsCalculatorTest {
         return new WorkforceMember(country, country.equals("US") ? "United States" : "Japan",
                 country.equals("US") ? "USD" : "JPY", dept, "Dept " + dept, title, level, local, usd, compaBp, position);
     }
+
+    @Test
+    void summarisesVariablePayAndBonusesInUsd() {
+        var people = java.util.List.of(
+                new WorkforceMember("US", "United States", "USD", 1, "Dept 1", "Engineer", JobLevel.L2,
+                        10_000_000, 10_000_000, 10_000L, BandPosition.WITHIN, 1_000_000, 250_000),
+                new WorkforceMember("JP", "Japan", "JPY", 1, "Dept 1", "Engineer", JobLevel.L2,
+                        6_000_000, 4_020_000, 10_000L, BandPosition.WITHIN, 402_000, 0));
+
+        var summary = InsightsCalculator.summary(new WorkforceSnapshot(people, AS_OF, "2026-10-01"));
+
+        assertThat(summary.totalPayroll().amount()).isEqualTo("140200.00");
+        assertThat(summary.variablePayTarget().amount()).isEqualTo("14020.00");
+        assertThat(summary.totalTargetCash().amount()).isEqualTo("154220.00");
+        assertThat(summary.bonusesLast12Months().amount()).isEqualTo("2500.00");
+        assertThat(InsightsCalculator.byCountry(new WorkforceSnapshot(people, AS_OF, "2026-10-01")).getFirst()
+                .bonusesUsdLast12Months().amount()).isEqualTo("2500.00");
+    }
 }

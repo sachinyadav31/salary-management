@@ -36,12 +36,15 @@ public final class InsightsCalculator {
         List<WorkforceMember> members = snapshot.members();
         if (members.isEmpty()) {
             return new Summary(snapshot.asOf(), snapshot.fxRatesAsOf(), USD, 0, 0, money(0, USD), null, null,
-                    bandSplit(members));
+                    bandSplit(members), money(0, USD), money(0, USD), money(0, USD));
         }
         PayStatistics usd = stats(members, WorkforceMember::salaryUsdMinor);
+        long variable = sum(members, WorkforceMember::variableTargetUsdMinor);
+        long bonuses = sum(members, WorkforceMember::bonusesUsdMinorLast12Months);
         return new Summary(snapshot.asOf(), snapshot.fxRatesAsOf(), USD, members.size(),
                 (int) members.stream().map(WorkforceMember::countryCode).distinct().count(),
-                money(usd.sum(), USD), money(usd.average(), USD), money(usd.median(), USD), bandSplit(members));
+                money(usd.sum(), USD), money(usd.average(), USD), money(usd.median(), USD), bandSplit(members),
+                money(variable, USD), money(Math.addExact(usd.sum(), variable), USD), money(bonuses, USD));
     }
 
     /** Largest payroll (USD) first. */
@@ -53,7 +56,9 @@ public final class InsightsCalculator {
                     PayStatistics usd = stats(group, WorkforceMember::salaryUsdMinor);
                     return new CountryInsight(first.countryCode(), first.countryName(), first.currency(), group.size(),
                             money(local.sum(), first.currency()), money(usd.sum(), USD),
-                            statsView(local, first.currency()), statsView(usd, USD), bandSplit(group));
+                            statsView(local, first.currency()), statsView(usd, USD), bandSplit(group),
+                            money(sum(group, WorkforceMember::variableTargetUsdMinor), USD),
+                            money(sum(group, WorkforceMember::bonusesUsdMinorLast12Months), USD));
                 })
                 .sorted(Comparator.comparing((CountryInsight c) -> c.payrollUsd().minorUnits()).reversed())
                 .toList();
@@ -108,6 +113,10 @@ public final class InsightsCalculator {
     private static <K> Map<K, List<WorkforceMember>> groupBy(List<WorkforceMember> members,
                                                             java.util.function.Function<WorkforceMember, K> key) {
         return members.stream().collect(Collectors.groupingBy(key, LinkedHashMap::new, Collectors.toList()));
+    }
+
+    private static long sum(List<WorkforceMember> members, ToLongFunction<WorkforceMember> value) {
+        return members.stream().mapToLong(value).reduce(0, Math::addExact);
     }
 
     private static PayStatistics stats(List<WorkforceMember> members, ToLongFunction<WorkforceMember> value) {

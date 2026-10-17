@@ -15,5 +15,15 @@ public record WorkforceMember(
         long salaryMinor,
         long salaryUsdMinor,
         Long compaRatioBp,
-        BandPosition bandPosition) {
+        BandPosition bandPosition,
+        long variableTargetUsdMinor,
+        long bonusesUsdMinorLast12Months) {
+
+    /** Without compensation figures (zero variable target and bonuses), for callers that only need base pay. */
+    public WorkforceMember(String countryCode, String countryName, String currency, long departmentId, String departmentName,
+                           String jobTitle, JobLevel level, long salaryMinor, long salaryUsdMinor, Long compaRatioBp,
+                           BandPosition bandPosition) {
+        this(countryCode, countryName, currency, departmentId, departmentName, jobTitle, level, salaryMinor, salaryUsdMinor,
+                compaRatioBp, bandPosition, 0, 0);
+    }
 }

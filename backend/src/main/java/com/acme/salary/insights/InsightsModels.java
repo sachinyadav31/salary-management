@@ -20,13 +20,16 @@ public final class InsightsModels {
                             BigDecimal averageCompaRatio) {
     }
 
+    /** Payroll is base pay; total target cash adds variable pay at 100% of target; bonuses are what was awarded. */
     public record Summary(Instant asOf, String fxRatesAsOf, String reportingCurrency, long headcount,
                           int countries, MoneyView totalPayroll, MoneyView averageSalary, MoneyView medianSalary,
-                          BandSplit bands) {
+                          BandSplit bands, MoneyView variablePayTarget, MoneyView totalTargetCash,
+                          MoneyView bonusesLast12Months) {
     }
 
     public record CountryInsight(String countryCode, String countryName, String currency, long headcount,
-                                 MoneyView payroll, MoneyView payrollUsd, Stats local, Stats usd, BandSplit bands) {
+                                 MoneyView payroll, MoneyView payrollUsd, Stats local, Stats usd, BandSplit bands,
+                                 MoneyView variablePayTargetUsd, MoneyView bonusesUsdLast12Months) {
     }
 
     /** {@code spread} = highest / lowest salary for the title, e.g. 1.80 means the top earner gets 80% more. */

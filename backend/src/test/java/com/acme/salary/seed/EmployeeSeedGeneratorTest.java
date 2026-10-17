@@ -135,4 +135,31 @@ class EmployeeSeedGeneratorTest {
             }
         }
     }
+
+    @Test
+    void bonusesFollowHrPractice() {
+        for (SeedEmployee e : employees) {
+            long target = com.acme.salary.employee.VariableTarget.defaultFor(e.departmentName(), e.level())
+                    .of(e.currentSalary()).minorUnits();
+            assertThat(e.bonuses()).allSatisfy(b -> {
+                assertThat(b.awardedOn()).isAfterOrEqualTo(e.hireDate()).isBeforeOrEqualTo(AS_OF);
+                assertThat(b.amount().currencyCode()).isEqualTo(e.currentSalary().currencyCode());
+                assertThat(b.amount().isPositive()).isTrue();
+                switch (b.type()) {
+                    case PERFORMANCE -> {
+                        assertThat(b.awardedOn().getMonthValue()).isEqualTo(4);
+                        assertThat(b.awardedOn().getDayOfMonth()).isEqualTo(1);
+                        assertThat(b.awardedOn()).isAfterOrEqualTo(e.hireDate().plusYears(1));
+                        assertThat(b.amount().minorUnits()).isLessThanOrEqualTo(Math.round(target * 1.4) + 100_000);
+                    }
+                    case SPOT -> assertThat(b.note()).isNotBlank();
+                    case SIGN_ON -> assertThat(b.awardedOn()).isEqualTo(e.hireDate());
+                    case RETENTION -> { }
+                }
+            });
+        }
+        long withSpot = employees.stream().filter(e -> e.bonuses().stream()
+                .anyMatch(b -> b.type() == com.acme.salary.bonus.BonusType.SPOT)).count();
+        assertThat(withSpot).isBetween(500L, 1_200L);
+    }
 }

@@ -1,7 +1,9 @@
 package com.acme.salary.seed;
 
 import com.acme.salary.common.Money;
+import com.acme.salary.bonus.BonusType;
 import com.acme.salary.employee.EmployeeStatus;
+import com.acme.salary.employee.VariableTarget;
 import com.acme.salary.reference.JobLevel;
 import com.acme.salary.salary.SalaryChangeReason;
 import com.acme.salary.seed.SeedCatalog.CountryProfile;
@@ -33,6 +35,12 @@ public class EmployeeSeedGenerator {
     static final double ANNUAL_RAISE_SHARE = 0.85;
     static final double PROMOTION_SHARE = 0.25;
     static final double MARKET_ADJUSTMENT_SHARE = 0.05;
+    static final double SIGN_ON_SHARE = 0.20;
+    static final double NO_PAYOUT_SHARE = 0.10;
+    static final double SPOT_SHARE = 0.08;
+    private static final List<String> SPOT_REASONS = List.of(
+            "Shipped a critical launch ahead of schedule", "Covered for the team during an incident",
+            "Outstanding customer feedback", "Mentored three new joiners", "Closed a strategic deal");
 
     private final Random random;
     private final LocalDate asOf;
@@ -61,6 +69,7 @@ public class EmployeeSeedGenerator {
 
         Money current = currentSalary(country, department, level);
         List<SeedSalaryRecord> history = history(current, hireDate, country);
+        List<SeedBonus> bonuses = bonuses(current, hireDate, status, department.name(), level, country);
 
         return new SeedEmployee(
                 "E%05d".formatted(index),
@@ -74,7 +83,8 @@ public class EmployeeSeedGenerator {
                 hireDate,
                 status,
                 current,
-                history);
+                history,
+                bonuses);
     }
 
     private Money currentSalary(CountryProfile country, DepartmentProfile department, JobLevel level) {
@@ -124,6 +134,45 @@ public class EmployeeSeedGenerator {
         newestFirst.add(new SeedSalaryRecord(Money.ofMinor(amount, country.currency()), hireDate, SalaryChangeReason.HIRE));
         Collections.reverse(newestFirst);
         return List.copyOf(newestFirst);
+    }
+
+    /**
+     * One-off awards: performance payouts of variable pay on 1 April for each full year worked (10% get nothing that
+     * year; the rest 60–140% of target), sign-on bonuses for some recent hires, and spot bonuses for ~8% of active
+     * people in the last year, each with the reason it was given.
+     */
+    private List<SeedBonus> bonuses(Money current, LocalDate hireDate, EmployeeStatus status, String department,
+                                    JobLevel level, CountryProfile country) {
+        List<SeedBonus> awards = new ArrayList<>();
+        long step = roundingStepMinor(country);
+        String currency = country.currency();
+        if (!hireDate.isBefore(asOf.minusYears(2)) && random.nextDouble() < SIGN_ON_SHARE) {
+            awards.add(new SeedBonus(BonusType.SIGN_ON, percentOf(current, 0.05 + random.nextDouble() * 0.05, step),
+                    hireDate, null));
+        }
+        long target = VariableTarget.defaultFor(department, level).of(current).minorUnits();
+        for (int year = asOf.getYear() - 1; year <= asOf.getYear(); year++) {
+            LocalDate payout = LocalDate.of(year, REVIEW_CYCLE_MONTH, 1);
+            boolean workedFullYear = !hireDate.isAfter(payout.minusYears(1));
+            if (payout.isAfter(asOf) || !workedFullYear || random.nextDouble() < NO_PAYOUT_SHARE) {
+                continue;
+            }
+            long amount = roundTo(Math.round(target * (0.6 + random.nextDouble() * 0.8)), step);
+            if (amount > 0) {
+                awards.add(new SeedBonus(BonusType.PERFORMANCE, Money.ofMinor(amount, currency), payout, null));
+            }
+        }
+        if (status == EmployeeStatus.ACTIVE && random.nextDouble() < SPOT_SHARE) {
+            LocalDate on = asOf.minusDays(random.nextLong(365));
+            awards.add(new SeedBonus(BonusType.SPOT, percentOf(current, 0.02 + random.nextDouble() * 0.03, step),
+                    on.isBefore(hireDate) ? hireDate : on, pick(SPOT_REASONS)));
+        }
+        awards.sort(java.util.Comparator.comparing(SeedBonus::awardedOn));
+        return List.copyOf(awards);
+    }
+
+    private static Money percentOf(Money salary, double share, long step) {
+        return Money.ofMinor(Math.max(step, roundTo(Math.round(salary.minorUnits() * share), step)), salary.currencyCode());
     }
 
     /** Promotions and market adjustments happen outside the review cycle date. */
