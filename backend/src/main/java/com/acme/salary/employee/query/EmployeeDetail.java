@@ -19,5 +19,6 @@ public record EmployeeDetail(
         String updatedBy,
         BigDecimal variableTargetPercent,
         MoneyView variableTarget,
-        MoneyView totalTargetCash) {
+        MoneyView totalTargetCash,
+        MoneyView bonusesLast12Months) {
 }

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -77,9 +78,11 @@ public class EmployeeQueryRepository {
     }
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final Clock clock;
 
-    public EmployeeQueryRepository(NamedParameterJdbcTemplate jdbc) {
+    public EmployeeQueryRepository(NamedParameterJdbcTemplate jdbc, Clock clock) {
         this.jdbc = jdbc;
+        this.clock = clock;
     }
 
     public PageResponse<EmployeeSummary> search(EmployeeSearchCriteria criteria) {
@@ -111,9 +114,14 @@ public class EmployeeQueryRepository {
     }
 
     public Optional<EmployeeDetail> findDetail(long id) {
-        return jdbc.query(COLUMNS + ", u.full_name as updated_by_name, e.variable_target_bp " + FROM
-                        + " left join app_user u on u.id = e.updated_by_user_id where e.id = :id",
-                new MapSqlParameterSource("id", id),
+        LocalDate today = LocalDate.now(clock);
+        return jdbc.query(COLUMNS + """
+                        , u.full_name as updated_by_name, e.variable_target_bp,
+                          (select coalesce(sum(b.amount_minor), 0) from bonus_award b
+                           where b.employee_id = e.id and b.awarded_on > :since and b.awarded_on <= :today) as bonuses_12m
+                        """ + FROM + " left join app_user u on u.id = e.updated_by_user_id where e.id = :id",
+                new MapSqlParameterSource("id", id).addValue("since", today.minusYears(1).toString())
+                        .addValue("today", today.toString()),
                 (rs, i) -> {
                     EmployeeSummary summary = ROW_MAPPER.mapRow(rs, i);
                     VariableTarget target = new VariableTarget(rs.getInt("variable_target_bp"));
@@ -122,7 +130,8 @@ public class EmployeeQueryRepository {
                     return new EmployeeDetail(summary, rs.getLong("version"),
                             Instant.parse(rs.getString("created_at")), Instant.parse(rs.getString("updated_at")),
                             rs.getString("updated_by_name"), target.percent(), MoneyView.from(variable),
-                            MoneyView.from(base.plus(variable)));
+                            MoneyView.from(base.plus(variable)),
+                            MoneyView.from(Money.ofMinor(rs.getLong("bonuses_12m"), base.currencyCode())));
                 })
                 .stream().findFirst();
     }

@@ -1,6 +1,9 @@
 package com.acme.salary;
 
+import com.acme.salary.bonus.BonusRules;
 import com.acme.salary.common.Money;
+import com.acme.salary.employee.CareerChanges;
+import com.acme.salary.employee.VariableTarget;
 import com.acme.salary.common.csv.CsvWriter;
 import com.acme.salary.insights.Histogram;
 import com.acme.salary.insights.InsightsCalculator;
@@ -39,7 +42,8 @@ class ArchitectureTest {
     static final ArchRule domainLogicIsFrameworkFree = noClasses()
             .that().belongToAnyOf(Money.class, CurrencyConverter.class, SalaryHistory.class, PayStatistics.class,
                     Histogram.class, InsightsCalculator.class, OutlierDetector.class, CompaRatio.class,
-                    EmployeeSeedGenerator.class, CsvWriter.class)
+                    EmployeeSeedGenerator.class, CsvWriter.class, BonusRules.class,
+                    VariableTarget.class, CareerChanges.class)
             .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..",
                     "org.hibernate..")
             .because("business rules must be unit-testable without starting Spring or a database");

@@ -37,6 +37,7 @@ class AuthIntegrationTest {
     void cleanUp() {
         jdbc.update("delete from salary_record where employee_id in (select id from employee where email like '%@auth.test')");
         jdbc.update("delete from employee_event where employee_id in (select id from employee where email like '%@auth.test')");
+        jdbc.update("delete from bonus_award where employee_id in (select id from employee where email like '%@auth.test')");
         jdbc.update("delete from employee where email like '%@auth.test'");
     }
 
@@ -138,6 +139,12 @@ class AuthIntegrationTest {
         assertThat(events).hasStatusOk().bodyJson().extractingPath("$[0].type").isEqualTo("LEVEL_CHANGED");
         assertThat(mvc.get().uri(created + "/career-events").session(session)).bodyJson()
                 .extractingPath("$[0].recordedBy").isEqualTo("Priya Sharma");
+
+        Cookie bonusToken = xsrfCookie();
+        var bonus = mvc.post().uri(created + "/bonuses").session(session).cookie(bonusToken)
+                .header("X-XSRF-TOKEN", bonusToken.getValue()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"type\":\"SPOT\",\"amount\":\"2500\",\"awardedOn\":\"2025-06-01\",\"note\":\"Shipped the audit trail\"}");
+        assertThat(bonus).hasStatus(201).bodyJson().extractingPath("$[0].recordedBy").isEqualTo("Priya Sharma");
     }
 
     private MockHttpSession signIn(String email) {
