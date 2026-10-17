@@ -6,6 +6,7 @@ import com.acme.salary.common.NotFoundException;
 import com.acme.salary.employee.Employee;
 import com.acme.salary.employee.EmployeeHired;
 import com.acme.salary.employee.EmployeeRepository;
+import com.acme.salary.employee.WorkforceChanged;
 import com.acme.salary.reference.CurrencyConverter;
 import com.acme.salary.salary.SalaryHistory.Entry;
 import com.acme.salary.salary.SalaryHistory.NewChange;
@@ -14,6 +15,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -42,15 +44,18 @@ public class SalaryService {
     private final CurrencyConverter converter;
     private final NamedParameterJdbcTemplate jdbc;
     private final EntityManager em;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public SalaryService(EmployeeRepository employees, SalaryRecordRepository salaryRecords,
-                         CurrencyConverter converter, NamedParameterJdbcTemplate jdbc, EntityManager em, Clock clock) {
+                         CurrencyConverter converter, NamedParameterJdbcTemplate jdbc, EntityManager em,
+                         ApplicationEventPublisher events, Clock clock) {
         this.employees = employees;
         this.salaryRecords = salaryRecords;
         this.converter = converter;
         this.jdbc = jdbc;
         this.em = em;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -89,6 +94,7 @@ public class SalaryService {
             // bump the version. Force it: one salary change = exactly one version bump.
             em.lock(employee, LockModeType.OPTIMISTIC_FORCE_INCREMENT);
         }
+        events.publishEvent(new WorkforceChanged("salary changed"));
         return saved.getId();
     }
 
@@ -117,6 +123,7 @@ public class SalaryService {
         }
         if (!stale.isEmpty()) {
             log.info("Salary rollover applied {} due change(s) as of {}", stale.size(), today);
+            events.publishEvent(new WorkforceChanged("scheduled salary changes applied"));
         }
         return stale.size();
     }

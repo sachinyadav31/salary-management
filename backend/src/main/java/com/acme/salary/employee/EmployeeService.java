@@ -59,6 +59,7 @@ public class EmployeeService {
                 cmd.lastName().trim(), email, country, department, cmd.jobTitle().trim(), cmd.level(),
                 cmd.hireDate(), salary, converter.toUsd(salary), now));
         events.publishEvent(new EmployeeHired(employee, salary, now));
+        events.publishEvent(new WorkforceChanged("employee hired"));
         return employee.getId();
     }
 
@@ -70,10 +71,12 @@ public class EmployeeService {
         }
         employee.updateProfile(cmd.firstName().trim(), cmd.lastName().trim(), email,
                 department(cmd.departmentId()), cmd.jobTitle().trim(), cmd.level(), clock.instant());
+        events.publishEvent(new WorkforceChanged("profile updated"));
     }
 
     public void changeStatus(long id, EmployeeStatus status, long expectedVersion) {
         findForUpdate(id, expectedVersion).changeStatus(status, clock.instant());
+        events.publishEvent(new WorkforceChanged("status changed"));
     }
 
     /**

@@ -31,3 +31,21 @@ MacBook (Apple Silicon), SQLite file DB, 10,000 employees, warm JVM, `curl` tota
 **Compa-ratio trade-off:** it is computed in a view, so sorting by it scans and sorts all 10k rows (~35 ms).
 That's well within budget. At 100k+ rows it would be stored like `current_salary_usd_minor` and kept in sync on
 salary writes and band changes.
+
+## Insights (dashboard)
+Aggregates are computed in memory from a cached snapshot of the active workforce (one lean query, ~1 MB for 10k).
+
+| Request | Cold (snapshot load) | Cached |
+|---|---|---|
+| `GET /api/insights/summary` | 163 ms (first request, JIT cold) | 12 ms |
+| `GET /api/insights/by-country` | — | 13 ms |
+| `GET /api/insights/by-title?country=IN` | — | 9 ms |
+| `GET /api/insights/distribution[?country=JP]` | — | 5 ms |
+
+**Why in memory:** medians need ordered data (SQLite has no `MEDIAN()`), and pure Java statistics are exact and unit
+tested. **Where it stops scaling:** fine to ~100k employees; beyond that, push aggregates into SQL or maintain
+summary tables updated on write.
+
+**Cache correctness:** invalidated *after commit* by a `WorkforceChanged` event, with a generation counter so a load
+that overlaps a write is never served. Verified live: doubling one salary raised total payroll by exactly that
+employee's previous USD salary on the very next request.

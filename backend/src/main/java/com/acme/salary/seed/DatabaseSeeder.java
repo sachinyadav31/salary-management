@@ -1,8 +1,10 @@
 package com.acme.salary.seed;
 
+import com.acme.salary.employee.WorkforceChanged;
 import com.acme.salary.reference.CurrencyConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,11 +27,13 @@ public class DatabaseSeeder {
     private final JdbcTemplate jdbc;
     private final Clock clock;
     private final CurrencyConverter converter;
+    private final ApplicationEventPublisher events;
 
-    public DatabaseSeeder(JdbcTemplate jdbc, Clock clock, CurrencyConverter converter) {
+    public DatabaseSeeder(JdbcTemplate jdbc, Clock clock, CurrencyConverter converter, ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.clock = clock;
         this.converter = converter;
+        this.events = events;
     }
 
     @Transactional
@@ -67,6 +71,7 @@ public class DatabaseSeeder {
                 insert into salary_record (employee_id, amount_minor, currency_code, effective_date, reason, created_at)
                 values (?, ?, ?, ?, ?, ?)""", salaryRows);
 
+        events.publishEvent(new WorkforceChanged("seeded"));
         log.info("Seeded {} employees and {} salary records in {} ms", employeeRows.size(), salaryRows.size(),
                 (System.nanoTime() - started) / 1_000_000);
         return employeeRows.size();

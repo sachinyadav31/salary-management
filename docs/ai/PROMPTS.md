@@ -82,3 +82,14 @@ For each phase: plan → review the plan → implement test-first → run tests 
 - Seeded workforce: 87% within band, 5.2% below, 7.8% above. Realistic outliers for the dashboard.
 - Cleanup during review: a scripted edit left a mis-indented row mapper with fully qualified `java.sql` types;
   tidied before commit.
+
+### Phase 10a — Insights and caching
+- Chose in-memory computation over SQL window functions for medians: pure, exact, unit-testable classes
+  (`PayStatistics`, `Histogram` with 1/2/5×10ⁿ "nice" buckets, `InsightsCalculator`), with the scaling limit
+  documented.
+- Cache invalidation is `@TransactionalEventListener(AFTER_COMMIT)`, the deliberate opposite of phase 8's synchronous
+  HIRE listener. A generation counter closes the "load overlaps a write" race; a deterministic unit test reproduces it.
+- Corrected my own test: it expected two values of 9×10¹⁸ to sum without overflow. The real contract is "realistic
+  payrolls fit easily; overflow fails loudly instead of wrapping", so the test now asserts `ArithmeticException`.
+- Integration tests with real commits: a committed hire appears on the next read; a rolled-back hire leaves the
+  same cached snapshot in place.
