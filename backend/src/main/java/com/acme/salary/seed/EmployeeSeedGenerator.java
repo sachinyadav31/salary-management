@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.function.ToIntFunction;
 
 /**
@@ -25,6 +26,13 @@ public class EmployeeSeedGenerator {
 
     private static final LocalDate EARLIEST_HIRE = LocalDate.of(2016, 1, 1);
     private static final double INACTIVE_SHARE = 0.03;
+
+    /** ACME's annual review cycle: raises take effect on 1 April. */
+    static final int REVIEW_CYCLE_MONTH = 4;
+    static final int MIN_MONTHS_BEFORE_REVIEW = 6;
+    static final double ANNUAL_RAISE_SHARE = 0.85;
+    static final double PROMOTION_SHARE = 0.25;
+    static final double MARKET_ADJUSTMENT_SHARE = 0.05;
 
     private final Random random;
     private final LocalDate asOf;
@@ -75,34 +83,52 @@ public class EmployeeSeedGenerator {
         return Money.ofMinor(roundTo(raw, roundingStepMinor(country)), country.currency());
     }
 
-    /** Builds history backwards from the current salary: hire record plus up to two yearly raises. */
+    /**
+     * Builds history backwards from the current salary, so the latest record always equals it:
+     * <ul>
+     *   <li>ACME runs one review cycle: annual reviews take effect on 1 April for everyone employed at least
+     *       6 months by then; most get a 2–8% raise, some none that year.</li>
+     *   <li>Some people are promoted on another date (8–15%); a few get a market adjustment (4–10%).</li>
+     * </ul>
+     */
     private List<SeedSalaryRecord> history(Money current, LocalDate hireDate, CountryProfile country) {
-        long yearsEmployed = ChronoUnit.YEARS.between(hireDate, asOf);
-        int raises = (int) Math.min(yearsEmployed, random.nextInt(3));
-        long step = roundingStepMinor(country);
+        record Change(SalaryChangeReason reason, double raise) {
+        }
+        // Chronological change events, at most one per date.
+        TreeMap<LocalDate, Change> changes = new TreeMap<>();
+        for (int year = hireDate.getYear(); year <= asOf.getYear(); year++) {
+            LocalDate cycle = LocalDate.of(year, REVIEW_CYCLE_MONTH, 1);
+            boolean eligible = !cycle.isBefore(hireDate.plusMonths(MIN_MONTHS_BEFORE_REVIEW)) && !cycle.isAfter(asOf);
+            if (eligible && random.nextDouble() < ANNUAL_RAISE_SHARE) {
+                changes.put(cycle, new Change(SalaryChangeReason.ANNUAL_REVIEW, 0.02 + random.nextDouble() * 0.06));
+            }
+        }
+        long tenureDays = ChronoUnit.DAYS.between(hireDate, asOf);
+        if (tenureDays >= 548 && random.nextDouble() < PROMOTION_SHARE) {
+            changes.putIfAbsent(offCycle(hireDate.plusDays(365 + random.nextLong(tenureDays - 365))),
+                    new Change(SalaryChangeReason.PROMOTION, 0.08 + random.nextDouble() * 0.07));
+        }
+        if (tenureDays >= 180 && random.nextDouble() < MARKET_ADJUSTMENT_SHARE) {
+            changes.putIfAbsent(offCycle(hireDate.plusDays(90 + random.nextLong(tenureDays - 90))),
+                    new Change(SalaryChangeReason.MARKET_ADJUSTMENT, 0.04 + random.nextDouble() * 0.06));
+        }
 
+        long step = roundingStepMinor(country);
         List<SeedSalaryRecord> newestFirst = new ArrayList<>();
         long amount = current.minorUnits();
-        for (int r = raises; r >= 1; r--) {
-            newestFirst.add(new SeedSalaryRecord(Money.ofMinor(amount, country.currency()),
-                    hireDate.plusYears(r), pickRaiseReason()));
-            double pct = 0.03 + random.nextDouble() * 0.09; // 3–12% raise
-            amount = Math.max(step, roundTo(Math.round(amount / (1 + pct)), step));
+        for (var change : changes.descendingMap().entrySet()) {
+            newestFirst.add(new SeedSalaryRecord(Money.ofMinor(amount, country.currency()), change.getKey(),
+                    change.getValue().reason()));
+            amount = Math.max(step, roundTo(Math.round(amount / (1 + change.getValue().raise())), step));
         }
         newestFirst.add(new SeedSalaryRecord(Money.ofMinor(amount, country.currency()), hireDate, SalaryChangeReason.HIRE));
         Collections.reverse(newestFirst);
         return List.copyOf(newestFirst);
     }
 
-    private SalaryChangeReason pickRaiseReason() {
-        double roll = random.nextDouble();
-        if (roll < 0.20) {
-            return SalaryChangeReason.PROMOTION;
-        }
-        if (roll < 0.30) {
-            return SalaryChangeReason.MARKET_ADJUSTMENT;
-        }
-        return SalaryChangeReason.ANNUAL_REVIEW;
+    /** Promotions and market adjustments happen outside the review cycle date. */
+    private static LocalDate offCycle(LocalDate date) {
+        return date.getMonthValue() == REVIEW_CYCLE_MONTH && date.getDayOfMonth() == 1 ? date.plusDays(1) : date;
     }
 
     private LocalDate pickHireDate() {

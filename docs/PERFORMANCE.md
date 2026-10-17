@@ -17,7 +17,7 @@ MacBook (Apple Silicon), SQLite file DB, 10,000 employees, warm JVM, `curl` tota
 
 | Request | Matches | Time |
 |---|---|---|
-| Seed 10,000 employees + 18,882 salary records | — | ~230 ms |
+| Seed 10,000 employees + 54,782 salary records (1 April review cycle since 2017) | — | ~370 ms |
 | `GET /api/employees` (first page) | 10,000 | 7 ms |
 | `?search=sharma` | 258 | 11 ms |
 | `?country=IN&level=L3&status=ACTIVE` | 703 | 6 ms |

@@ -57,10 +57,10 @@ class EmployeeSeedGeneratorTest {
     void salaryHistoryIsConsistentWithCurrentSalary() {
         for (SeedEmployee e : employees) {
             List<SeedSalaryRecord> history = e.salaryHistory();
-            assertThat(history).isNotEmpty().hasSizeLessThanOrEqualTo(3);
+            assertThat(history).isNotEmpty().hasSizeLessThanOrEqualTo(14); // hire + 11 review cycles since 2016 + promotion + market
             assertThat(history.getFirst().reason()).isEqualTo(SalaryChangeReason.HIRE);
             assertThat(history.getFirst().effectiveDate()).isEqualTo(e.hireDate());
-            assertThat(history).extracting(SeedSalaryRecord::effectiveDate).isSorted();
+            assertThat(history).extracting(SeedSalaryRecord::effectiveDate).isSorted().doesNotHaveDuplicates();
             assertThat(history.getLast().amount()).isEqualTo(e.currentSalary());
             assertThat(history).allSatisfy(r -> {
                 assertThat(r.amount().isPositive()).isTrue();
@@ -97,5 +97,42 @@ class EmployeeSeedGeneratorTest {
                 .extracting(SeedEmployee::currentSalary)
                 .extracting(Money::currencyCode)
                 .containsOnly("JPY");
+    }
+
+    @Test
+    void annualReviewsFollowOneCompanyCycleOnFirstApril() {
+        var reviews = employees.stream().flatMap(e -> e.salaryHistory().stream()
+                .filter(r -> r.reason() == SalaryChangeReason.ANNUAL_REVIEW)
+                .map(r -> Map.entry(e, r))).toList();
+
+        assertThat(reviews).isNotEmpty().allSatisfy(entry -> {
+            LocalDate date = entry.getValue().effectiveDate();
+            assertThat(date.getMonthValue()).isEqualTo(4);
+            assertThat(date.getDayOfMonth()).isEqualTo(1);
+            assertThat(date).as("employed at least 6 months before the review")
+                    .isAfterOrEqualTo(entry.getKey().hireDate().plusMonths(6));
+        });
+    }
+
+    @Test
+    void promotionsAndAdjustmentsHappenOffCycleForAMinority() {
+        long promoted = employees.stream().filter(e -> e.salaryHistory().stream()
+                .anyMatch(r -> r.reason() == SalaryChangeReason.PROMOTION)).count();
+
+        assertThat(promoted).isBetween(1_000L, 3_000L);
+        assertThat(employees).allSatisfy(e -> assertThat(e.salaryHistory())
+                .filteredOn(r -> r.reason() == SalaryChangeReason.PROMOTION || r.reason() == SalaryChangeReason.MARKET_ADJUSTMENT)
+                .allSatisfy(r -> assertThat(r.effectiveDate().getMonthValue() == 4 && r.effectiveDate().getDayOfMonth() == 1).isFalse()));
+    }
+
+    @Test
+    void raisesAreRealisticSizes() {
+        for (SeedEmployee e : employees) {
+            var history = e.salaryHistory();
+            for (int i = 1; i < history.size(); i++) {
+                double change = (double) history.get(i).amount().minorUnits() / history.get(i - 1).amount().minorUnits() - 1;
+                assertThat(change).as("%s %s", e.employeeCode(), history.get(i).reason()).isBetween(-0.02, 0.17);
+            }
+        }
     }
 }
