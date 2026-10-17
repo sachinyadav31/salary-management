@@ -143,3 +143,48 @@ export interface Envelope<T> {
   fxRatesAsOf: string;
   data: T;
 }
+
+// --- Employee detail and writes ------------------------------------------------------------------
+
+export interface EmployeeDetail extends EmployeeSummary {
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SalaryChangeReason = 'HIRE' | 'PROMOTION' | 'ANNUAL_REVIEW' | 'MARKET_ADJUSTMENT' | 'CORRECTION';
+export type HistoryStatus = 'PAST' | 'CURRENT' | 'SCHEDULED';
+
+export interface SalaryHistoryItem {
+  id: number;
+  amount: Money;
+  effectiveDate: string;
+  reason: SalaryChangeReason;
+  note: string | null;
+  status: HistoryStatus;
+  changePercent: number | null;
+}
+
+export interface UpdateEmployeeRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  departmentId: number;
+  jobTitle: string;
+  level: JobLevel;
+  version: number;
+}
+
+export interface RecordSalaryChangeRequest {
+  /** Decimal string in the employee's currency, e.g. "95000.00" (never a float). */
+  amount: string;
+  effectiveDate: string;
+  reason: Exclude<SalaryChangeReason, 'HIRE'>;
+  note: string | null;
+  version: number;
+}
+
+export interface SalaryChangeResponse {
+  employee: EmployeeDetail;
+  history: SalaryHistoryItem[];
+}
