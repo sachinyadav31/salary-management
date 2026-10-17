@@ -2,8 +2,8 @@ package com.acme.salary.employee.query;
 
 import com.acme.salary.common.web.PageResponse;
 import com.acme.salary.employee.EmployeeStatus;
-import com.acme.salary.employee.JobLevel;
 import com.acme.salary.payband.BandPosition;
+import com.acme.salary.reference.JobLevel;
 
 import java.math.BigDecimal;
 import com.acme.salary.reference.ReferenceConfig;

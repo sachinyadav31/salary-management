@@ -1,7 +1,7 @@
 package com.acme.salary.insights;
 
-import com.acme.salary.employee.JobLevel;
 import com.acme.salary.payband.BandPosition;
+import com.acme.salary.reference.JobLevel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 

@@ -1,9 +1,9 @@
 package com.acme.salary.insights;
 
-import com.acme.salary.employee.JobLevel;
 import com.acme.salary.insights.OutlierDetector.OutlierCard;
 import com.acme.salary.insights.OutlierDetector.OutlierType;
 import com.acme.salary.payband.BandPosition;
+import com.acme.salary.reference.JobLevel;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

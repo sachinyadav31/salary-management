@@ -1,5 +1,7 @@
 package com.acme.salary.employee;
 
+import com.acme.salary.reference.JobLevel;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 

@@ -1,4 +1,4 @@
-package com.acme.salary.reference;
+package com.acme.salary.meta;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

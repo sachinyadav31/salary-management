@@ -1,6 +1,6 @@
 package com.acme.salary.seed;
 
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.reference.JobLevel;
 
 /** Test-only bridge to the package-private seed model. */
 public final class SeedCatalogAccess {

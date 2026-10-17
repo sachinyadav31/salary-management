@@ -1,12 +1,11 @@
 package com.acme.salary.insights.api;
 
-import com.acme.salary.employee.JobLevel;
 import com.acme.salary.insights.WorkforceMember;
 import com.acme.salary.insights.WorkforceSnapshot;
 import com.acme.salary.insights.WorkforceSnapshotCache;
 import com.acme.salary.payband.BandPosition;
-import com.acme.salary.reference.CountryRepository;
-import com.acme.salary.reference.DepartmentRepository;
+import com.acme.salary.reference.JobLevel;
+import com.acme.salary.reference.ReferenceDataService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +17,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @WebMvcTest(InsightsController.class)
@@ -25,8 +25,7 @@ class InsightsControllerTest {
 
     @Autowired MockMvcTester mvc;
     @MockitoBean WorkforceSnapshotCache cache;
-    @MockitoBean CountryRepository countries;
-    @MockitoBean DepartmentRepository departments;
+    @MockitoBean ReferenceDataService referenceData;
 
     @BeforeEach
     void snapshot() {
@@ -36,7 +35,8 @@ class InsightsControllerTest {
                 new WorkforceMember("IN", "India", "INR", 1, "Engineering", "Software Engineer", JobLevel.L2,
                         90_000_000, 1_080_000, 7_700L, BandPosition.BELOW)),
                 Instant.parse("2026-10-17T08:00:00Z"), "2026-10-01"));
-        when(countries.existsById("IN")).thenReturn(true);
+        doThrow(new IllegalArgumentException("Unknown country: XX")).when(referenceData).requireCountry("XX");
+        doThrow(new IllegalArgumentException("Unknown department: 99")).when(referenceData).requireDepartment(99L);
     }
 
     @Test

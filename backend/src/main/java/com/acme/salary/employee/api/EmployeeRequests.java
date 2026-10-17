@@ -3,7 +3,7 @@ package com.acme.salary.employee.api;
 import com.acme.salary.employee.EmployeeCommands.CreateEmployee;
 import com.acme.salary.employee.EmployeeCommands.UpdateProfile;
 import com.acme.salary.employee.EmployeeStatus;
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.reference.JobLevel;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

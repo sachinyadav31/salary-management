@@ -2,7 +2,7 @@ package com.acme.salary.insights;
 
 import com.acme.salary.employee.EmployeeCommands.CreateEmployee;
 import com.acme.salary.employee.EmployeeService;
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.reference.JobLevel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

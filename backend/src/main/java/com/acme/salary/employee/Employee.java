@@ -4,6 +4,7 @@ import com.acme.salary.common.ConflictException;
 import com.acme.salary.common.Money;
 import com.acme.salary.reference.Country;
 import com.acme.salary.reference.Department;
+import com.acme.salary.reference.JobLevel;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;

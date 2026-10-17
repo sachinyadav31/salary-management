@@ -1,7 +1,7 @@
-package com.acme.salary.reference.api;
+package com.acme.salary.meta.api;
 
 import com.acme.salary.employee.EmployeeStatus;
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.reference.JobLevel;
 
 import java.util.List;
 

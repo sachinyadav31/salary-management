@@ -1,10 +1,10 @@
 package com.acme.salary.employee.api;
 
 import com.acme.salary.employee.EmployeeStatus;
-import com.acme.salary.employee.JobLevel;
 import com.acme.salary.employee.query.EmployeeSearchCriteria;
 import com.acme.salary.employee.query.EmployeeSortField;
 import com.acme.salary.payband.BandPosition;
+import com.acme.salary.reference.JobLevel;
 
 import java.math.BigDecimal;
 import java.util.List;

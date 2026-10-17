@@ -2,7 +2,7 @@ package com.acme.salary.payband;
 
 import com.acme.salary.common.Money;
 import com.acme.salary.common.web.MoneyView;
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.reference.JobLevel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 

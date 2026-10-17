@@ -6,12 +6,11 @@ import com.acme.salary.insights.InsightsModels.Distribution;
 import com.acme.salary.insights.InsightsModels.Envelope;
 import com.acme.salary.insights.InsightsModels.Summary;
 import com.acme.salary.insights.InsightsModels.TitleInsight;
-import com.acme.salary.insights.OutlierDetector;
 import com.acme.salary.insights.OutlierDetector.OutlierCard;
+import com.acme.salary.insights.OutlierDetector;
 import com.acme.salary.insights.WorkforceSnapshot;
 import com.acme.salary.insights.WorkforceSnapshotCache;
-import com.acme.salary.reference.CountryRepository;
-import com.acme.salary.reference.DepartmentRepository;
+import com.acme.salary.reference.ReferenceDataService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,14 +30,11 @@ public class InsightsController {
 
     private final WorkforceSnapshotCache snapshots;
     private final OutlierDetector outlierDetector = new OutlierDetector();
-    private final CountryRepository countries;
-    private final DepartmentRepository departments;
+    private final ReferenceDataService referenceData;
 
-    public InsightsController(WorkforceSnapshotCache snapshots, CountryRepository countries,
-                              DepartmentRepository departments) {
+    public InsightsController(WorkforceSnapshotCache snapshots, ReferenceDataService referenceData) {
         this.snapshots = snapshots;
-        this.countries = countries;
-        this.departments = departments;
+        this.referenceData = referenceData;
     }
 
     @Operation(summary = "Org-wide headcount, payroll and band health (USD)")
@@ -57,7 +53,7 @@ public class InsightsController {
     @Operation(summary = "Pay statistics per job title within one country")
     @GetMapping("/by-title")
     public Envelope<List<TitleInsight>> byTitle(@RequestParam String country) {
-        requireCountry(country);
+        referenceData.requireCountry(country);
         WorkforceSnapshot snapshot = snapshots.get();
         return envelope(snapshot, InsightsCalculator.byTitle(snapshot, country));
     }
@@ -67,10 +63,10 @@ public class InsightsController {
     public Distribution distribution(@RequestParam(required = false) String country,
                                      @RequestParam(name = "department", required = false) Long departmentId) {
         if (country != null) {
-            requireCountry(country);
+            referenceData.requireCountry(country);
         }
-        if (departmentId != null && !departments.existsById(departmentId)) {
-            throw new IllegalArgumentException("Unknown department: " + departmentId);
+        if (departmentId != null) {
+            referenceData.requireDepartment(departmentId);
         }
         return InsightsCalculator.distribution(snapshots.get(), country, departmentId);
     }
@@ -84,12 +80,6 @@ public class InsightsController {
         }
         WorkforceSnapshot snapshot = snapshots.get();
         return envelope(snapshot, outlierDetector.detect(snapshot, limit));
-    }
-
-    private void requireCountry(String country) {
-        if (!countries.existsById(country)) {
-            throw new IllegalArgumentException("Unknown country: " + country);
-        }
     }
 
     private static <T> Envelope<T> envelope(WorkforceSnapshot snapshot, T data) {

@@ -1,4 +1,4 @@
-package com.acme.salary.employee;
+package com.acme.salary.reference;
 
 /** Career levels from entry (L1) to principal/director (L6). */
 public enum JobLevel {

@@ -2,7 +2,7 @@ package com.acme.salary.seed;
 
 import com.acme.salary.common.Money;
 import com.acme.salary.employee.EmployeeStatus;
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.reference.JobLevel;
 
 import java.time.LocalDate;
 import java.util.List;

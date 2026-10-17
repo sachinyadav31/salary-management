@@ -3,6 +3,7 @@ package com.acme.salary.employee;
 import com.acme.salary.common.Money;
 import com.acme.salary.reference.Country;
 import com.acme.salary.reference.Department;
+import com.acme.salary.reference.JobLevel;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

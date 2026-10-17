@@ -5,6 +5,7 @@ import com.acme.salary.common.Money;
 import com.acme.salary.common.NotFoundException;
 import com.acme.salary.employee.EmployeeCommands.CreateEmployee;
 import com.acme.salary.employee.EmployeeCommands.UpdateProfile;
+import com.acme.salary.reference.JobLevel;
 import com.acme.salary.reference.ReferenceConfig;
 import com.acme.salary.salary.SalaryChangeReason;
 import com.acme.salary.salary.SalaryRecord;

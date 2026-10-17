@@ -7,7 +7,7 @@ import com.acme.salary.employee.EmployeeCommands.CreateEmployee;
 import com.acme.salary.employee.EmployeeRepository;
 import com.acme.salary.employee.EmployeeService;
 import com.acme.salary.employee.EmployeeStatus;
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.reference.JobLevel;
 import com.acme.salary.reference.ReferenceConfig;
 import com.acme.salary.salary.SalaryHistory.EntryStatus;
 import com.acme.salary.salary.SalaryHistory.TimelineEntry;

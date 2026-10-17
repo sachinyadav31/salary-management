@@ -1,7 +1,7 @@
 package com.acme.salary.seed;
 
 import com.acme.salary.common.Money;
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.reference.JobLevel;
 import com.acme.salary.salary.SalaryChangeReason;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

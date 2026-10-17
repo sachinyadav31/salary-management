@@ -1,7 +1,7 @@
 package com.acme.salary.insights;
 
-import com.acme.salary.employee.JobLevel;
 import com.acme.salary.payband.BandPosition;
+import com.acme.salary.reference.JobLevel;
 
 /** The fields insights need about one active employee. Compa/position are null if no band exists. */
 public record WorkforceMember(

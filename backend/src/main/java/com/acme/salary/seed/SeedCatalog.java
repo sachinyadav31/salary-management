@@ -1,6 +1,6 @@
 package com.acme.salary.seed;
 
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.reference.JobLevel;
 
 import java.util.List;
 import java.util.Map;

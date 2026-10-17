@@ -122,3 +122,16 @@ For each phase: plan → review the plan → implement test-first → run tests 
 - `@ParameterObject` on the shared filter record, otherwise Swagger would show the directory filters as one opaque
   object; a test asserts `country`, `level`, `bandPosition`, … appear as individual query parameters.
 - Opened `/swagger-ui.html` in the built-in browser to confirm it renders.
+
+### Phase 11c — Architecture tests (ArchUnit)
+- Seven executable rules: no feature cycles, framework-free domain classes, controllers never use JPA repositories
+  or `EntityManager`, no entities in the API layer, nothing depends on `api`, controllers live in `api`,
+  no `double`/`float` fields outside seed data.
+- Wrote the rules first and let them fail. They found **three real issues in code written earlier in this session**:
+  1. Cycle `employee ↔ payband`: `JobLevel` lived in `employee` but is reference data used by bands. Moved it to
+     `reference`.
+  2. Cycle `employee ↔ reference`: `MetaController` composed data from both but lived in `reference`. Moved it to a
+     new top-level `meta` feature.
+  3. (Not predicted) `InsightsController` called JPA repositories to validate filters. Added `ReferenceDataService`.
+- Lesson for the AI workflow: plausible-looking generated code still drifts architecturally; executable rules catch
+  that drift on every build, not just at code review.

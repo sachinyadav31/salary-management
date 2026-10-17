@@ -9,7 +9,10 @@ Requirements: `docs/REQUIREMENTS.md`. Design notes: `docs/`.
 - Deploy: single Docker image (Spring Boot serves the Angular build) on Render.
 
 ## Conventions
-- Package by feature: `employee`, `salary`, `insights`, `reference`, `seed`, `common`.
+- Package by feature: `employee`, `salary`, `payband`, `insights`, `reference`, `meta`, `seed`, `common`.
+  HTTP lives in each feature's `api` sub-package. `ArchitectureTest` (ArchUnit) enforces: no feature cycles,
+  framework-free domain classes, no JPA repositories/entities in `api`, nothing depends on `api`, no `double`/`float`
+  fields outside `seed`. Fix the design rather than weakening a rule.
 - Domain logic in plain Java classes (no Spring) so it is unit-testable.
 - REST under `/api`; errors as RFC 7807 problem details; Bean Validation on inputs.
 

@@ -1,10 +1,10 @@
-package com.acme.salary.reference.api;
+package com.acme.salary.meta.api;
 
 import com.acme.salary.employee.EmployeeStatus;
-import com.acme.salary.employee.JobLevel;
+import com.acme.salary.meta.api.MetaResponse.CountryView;
+import com.acme.salary.meta.api.MetaResponse.DepartmentView;
 import com.acme.salary.reference.CurrencyConverter;
-import com.acme.salary.reference.api.MetaResponse.CountryView;
-import com.acme.salary.reference.api.MetaResponse.DepartmentView;
+import com.acme.salary.reference.JobLevel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/** Composes reference data from several features for the UI's filters and forms. */
 @RestController
 @Tag(name = "Reference data", description = "Countries, departments, titles and levels for filters")
 public class MetaController {

@@ -2,9 +2,9 @@ package com.acme.salary.employee.query;
 
 import com.acme.salary.common.web.MoneyView;
 import com.acme.salary.employee.EmployeeStatus;
-import com.acme.salary.employee.JobLevel;
 import com.acme.salary.payband.BandPosition;
 import com.acme.salary.payband.PayBandView;
+import com.acme.salary.reference.JobLevel;
 
 import java.math.BigDecimal;
 
