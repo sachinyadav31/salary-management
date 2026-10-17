@@ -1,0 +1,16 @@
+# Keep the build context small and reproducible: no local builds, dependencies, databases or secrets.
+.git
+.github
+.claude
+docs
+**/node_modules
+frontend/dist
+frontend/.angular
+backend/build
+backend/.gradle
+backend/src/main/resources/static
+**/*.db
+**/*.db-*
+*.md
+*.docx
+.DS_Store
