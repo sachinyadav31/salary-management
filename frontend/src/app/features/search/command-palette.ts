@@ -1,5 +1,5 @@
 import { HttpParams } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, Injector, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -105,8 +105,12 @@ export class CommandPalette {
   }
 }
 
-/** Opens the palette unless it (or another dialog) is already open. */
-export function openCommandPalette(dialog: MatDialog): void {
+/**
+ * Opens the palette unless it (or another dialog) is already open. Takes an injector so the app shell needn't import
+ * MatDialog: this whole module is loaded on first use.
+ */
+export function openCommandPalette(injector: Injector): void {
+  const dialog = injector.get(MatDialog);
   if (dialog.openDialogs.length) return;
   dialog.open(CommandPalette, {
     width: '600px',

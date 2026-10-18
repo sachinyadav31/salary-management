@@ -1,5 +1,4 @@
-import { Component, inject } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
+import { Component, Injector, inject } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -9,7 +8,6 @@ import { filter, map, of, switchMap } from 'rxjs';
 
 import { MetaApi } from './core/api/meta-api';
 import { AuthService } from './core/auth/auth';
-import { openCommandPalette } from './features/search/command-palette';
 import { isPaletteShortcut } from './features/search/palette';
 
 interface PageHeading {
@@ -52,7 +50,7 @@ export class App {
     { initialValue: {} as Partial<PageHeading> },
   );
 
-  private readonly dialog = inject(MatDialog);
+  private readonly injector = inject(Injector);
 
   /** True on macOS, for the shortcut hint. */
   protected readonly isMac = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? '');
@@ -64,8 +62,9 @@ export class App {
     }
   }
 
+  /** Loaded on first use: the palette (and the add-employee form it can open) stays out of the initial bundle. */
   protected openSearch(): void {
-    openCommandPalette(this.dialog);
+    import('./features/search/command-palette').then((m) => m.openCommandPalette(this.injector));
   }
 
   protected initials(name: string): string {
