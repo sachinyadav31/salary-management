@@ -50,12 +50,19 @@
         <h1 class="display">{{ page().heading }}</h1>
         <p class="muted">{{ page().subheading }}</p>
       </div>
-      @if (meta(); as meta) {
-        <span class="fx-chip num" matTooltip="Org-wide figures are converted to USD with fixed, dated rates">
-          <mat-icon>currency_exchange</mat-icon>
-          USD · FX as of {{ meta.fxRatesAsOf }}
-        </span>
-      }
+      <div class="top-actions">
+        <button type="button" class="search-button" (click)="openSearch()" aria-label="Search people and commands" aria-keyshortcuts="Meta+K Control+K">
+          <mat-icon>search</mat-icon>
+          <span class="label">Search</span>
+          <kbd>{{ isMac ? '⌘' : 'Ctrl ' }}K</kbd>
+        </button>
+        @if (meta(); as meta) {
+          <span class="fx-chip num" matTooltip="Org-wide figures are converted to USD with fixed, dated rates">
+            <mat-icon>currency_exchange</mat-icon>
+            USD · FX as of {{ meta.fxRatesAsOf }}
+          </span>
+        }
+      </div>
     </header>
 
     <main class="content">

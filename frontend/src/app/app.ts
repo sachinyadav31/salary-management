@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -8,6 +9,8 @@ import { filter, map, of, switchMap } from 'rxjs';
 
 import { MetaApi } from './core/api/meta-api';
 import { AuthService } from './core/auth/auth';
+import { openCommandPalette } from './features/search/command-palette';
+import { isPaletteShortcut } from './features/search/palette';
 
 interface PageHeading {
   heading: string;
@@ -21,6 +24,7 @@ interface PageHeading {
   imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, MatMenuModule, MatTooltipModule],
   templateUrl: './app.html',
   styleUrl: './app.scss',
+  host: { '(document:keydown)': 'onKeydown($event)' },
 })
 export class App {
   protected readonly auth = inject(AuthService);
@@ -47,6 +51,22 @@ export class App {
     ),
     { initialValue: {} as Partial<PageHeading> },
   );
+
+  private readonly dialog = inject(MatDialog);
+
+  /** True on macOS, for the shortcut hint. */
+  protected readonly isMac = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? '');
+
+  protected onKeydown(event: KeyboardEvent): void {
+    if (isPaletteShortcut(event) && this.auth.signedIn() && !this.page().bare) {
+      event.preventDefault();
+      this.openSearch();
+    }
+  }
+
+  protected openSearch(): void {
+    openCommandPalette(this.dialog);
+  }
 
   protected initials(name: string): string {
     return name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase();

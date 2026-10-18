@@ -1,0 +1,44 @@
+<div class="search">
+  <mat-icon aria-hidden="true">search</mat-icon>
+  <input #box type="text" role="combobox" aria-label="Search people and commands" aria-autocomplete="list"
+         aria-controls="palette-list" [attr.aria-expanded]="items().length > 0" [attr.aria-activedescendant]="activeId()"
+         placeholder="Search by name, email or employee code…" autocomplete="off" spellcheck="false"
+         [value]="query()" (input)="onInput(box.value)" (keydown)="onKeydown($event)" />
+  <kbd>esc</kbd>
+</div>
+
+<ul id="palette-list" role="listbox" aria-label="Results">
+  @if (people().length) {
+    <li class="group" role="presentation">People</li>
+  }
+  @for (item of items(); track $index; let i = $index) {
+    @if (item.kind === 'command' && (i === 0 || items()[i - 1].kind === 'person')) {
+      <li class="group" role="presentation">{{ searching() ? 'Commands' : 'Go to' }}</li>
+    }
+    <li [id]="'palette-item-' + i" role="option" [attr.aria-selected]="i === active()" [class.active]="i === active()"
+        (click)="choose(item)" (mousemove)="active.set(i)">
+      @if (item.kind === 'person') {
+        <span class="avatar">{{ item.person.firstName[0] }}{{ item.person.lastName[0] }}</span>
+        <span class="main">
+          <span class="title">{{ item.person.fullName }}
+            @if (item.person.status === 'INACTIVE') { <span class="tag">Inactive</span> }
+          </span>
+          <span class="sub">{{ item.person.employeeCode }} · {{ item.person.jobTitle }} · {{ item.person.level }} · {{ flag(item.person.countryCode) }} {{ item.person.countryName }}</span>
+        </span>
+        <span class="num side">{{ item.person.salary | money }}</span>
+      } @else {
+        <mat-icon class="icon">{{ item.command.icon }}</mat-icon>
+        <span class="main"><span class="title">{{ item.command.label }}</span></span>
+        <span class="side">{{ item.command.hint }}</span>
+      }
+    </li>
+  }
+  @if (searching() && !loading() && !items().length) {
+    <li class="empty" role="presentation">No one matches “{{ query().trim() }}”</li>
+  }
+  @if (loading() && !people().length) {
+    <li class="empty" role="presentation">Searching…</li>
+  }
+</ul>
+
+<p class="footer"><kbd>↑</kbd><kbd>↓</kbd> move <kbd>enter</kbd> open <kbd>⌘K</kbd> anywhere</p>

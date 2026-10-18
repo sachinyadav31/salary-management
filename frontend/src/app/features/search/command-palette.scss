@@ -1,0 +1,99 @@
+:host { display: block; }
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--pa-border);
+
+  mat-icon { color: var(--pa-muted); }
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--pa-text);
+    font: inherit;
+    font-size: 17px;
+  }
+}
+
+ul {
+  max-height: min(56vh, 440px);
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+
+.group {
+  padding: 10px 12px 4px;
+  color: var(--pa-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[role='option'] {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+
+  &.active { background: color-mix(in srgb, var(--pa-accent) 12%, transparent); }
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--pa-accent) 18%, var(--pa-surface));
+  font-size: 12px;
+  font-weight: 650;
+}
+.icon { flex: none; width: 32px; text-align: center; color: var(--pa-muted); }
+.main { display: grid; min-width: 0; flex: 1; }
+.title { font-weight: 600; }
+.sub, .side { color: var(--pa-muted); font-size: 12.5px; }
+.sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side { flex: none; }
+.tag {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pa-below) 14%, transparent);
+  color: var(--pa-below);
+  font-size: 11px;
+  font-weight: 600;
+}
+.empty { padding: 18px 12px; color: var(--pa-muted); text-align: center; }
+
+.footer {
+  margin: 0;
+  padding: 8px 18px;
+  border-top: 1px solid var(--pa-border);
+  color: var(--pa-muted);
+  font-size: 12px;
+}
+kbd {
+  margin: 0 4px 0 0;
+  padding: 1px 6px;
+  border: 1px solid var(--pa-border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 11px;
+}
+.footer kbd:not(:first-child) { margin-left: 8px; }
+.footer kbd + kbd { margin-left: 0; }
+
+@media (max-width: 600px) {
+  .side { display: none; }
+}
