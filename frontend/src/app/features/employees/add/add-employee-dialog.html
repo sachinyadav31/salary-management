@@ -1,0 +1,98 @@
+<h2 mat-dialog-title>Add employee</h2>
+<mat-dialog-content>
+  <form id="add-employee" [formGroup]="form" (ngSubmit)="submit()" class="grid" novalidate aria-label="Add employee">
+    <div class="row">
+      <mat-form-field appearance="outline" class="grow">
+        <mat-label>First name</mat-label>
+        <input matInput formControlName="firstName" autocomplete="off" cdkFocusInitial />
+        @if (error('firstName'); as m) { <mat-error>{{ m }}</mat-error> }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="grow">
+        <mat-label>Last name</mat-label>
+        <input matInput formControlName="lastName" autocomplete="off" />
+        @if (error('lastName'); as m) { <mat-error>{{ m }}</mat-error> }
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Work email</mat-label>
+      <input matInput type="email" formControlName="email" autocomplete="off" />
+      @if (error('email'); as m) { <mat-error>{{ m }}</mat-error> }
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="grow">
+        <mat-label>Country</mat-label>
+        <mat-select formControlName="countryCode">
+          @for (c of meta()?.countries ?? []; track c.code) {
+            <mat-option [value]="c.code">{{ flag(c.code) }} {{ c.name }} ({{ c.currency }})</mat-option>
+          }
+        </mat-select>
+        @if (error('countryCode'); as m) { <mat-error>{{ m }}</mat-error> }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="grow">
+        <mat-label>Department</mat-label>
+        <mat-select formControlName="departmentId">
+          @for (d of meta()?.departments ?? []; track d.id) { <mat-option [value]="d.id">{{ d.name }}</mat-option> }
+        </mat-select>
+        @if (error('departmentId'); as m) { <mat-error>{{ m }}</mat-error> }
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="grow">
+        <mat-label>Job title</mat-label>
+        <input matInput formControlName="jobTitle" [matAutocomplete]="titles" autocomplete="off" />
+        <mat-autocomplete #titles="matAutocomplete">
+          @for (t of titleOptions(); track t) { <mat-option [value]="t">{{ t }}</mat-option> }
+        </mat-autocomplete>
+        @if (error('jobTitle'); as m) { <mat-error>{{ m }}</mat-error> }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="level">
+        <mat-label>Level</mat-label>
+        <mat-select formControlName="level">
+          @for (l of meta()?.levels ?? []; track l) { <mat-option [value]="l">{{ l }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="grow">
+        <mat-label>Starting salary{{ currency() ? ' (' + currency() + ', per year)' : '' }}</mat-label>
+        <input matInput formControlName="salaryAmount" inputmode="decimal" autocomplete="off" [placeholder]="currency() ? '' : 'Choose a country first'" />
+        @if (error('salaryAmount'); as m) { <mat-error>{{ m }}</mat-error> }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Hire date</mat-label>
+        <input matInput type="date" formControlName="hireDate" [min]="dates.min" [max]="dates.max" />
+        @if (error('hireDate'); as m) { <mat-error>{{ m }}</mat-error> }
+      </mat-form-field>
+    </div>
+
+    @if (band(); as b) {
+      <div class="band-preview" aria-live="polite">
+        <div class="band-text">
+          <span class="muted">{{ values().level }} band</span>
+          <span class="num">{{ b.min | money }} – {{ b.max | money }}</span>
+          @if (preview(); as p) {
+            <span class="position" [class]="'position ' + (p.position ?? '').toLowerCase()">
+              compa-ratio <strong class="num">{{ p.compaRatio | number: '1.2-2' }}</strong> · {{ (p.position ?? '').toLowerCase() }} band
+            </span>
+          }
+        </div>
+        @if (preview(); as p) {
+          <pa-band-bar [salary]="p.salary" [band]="b" [position]="p.position" />
+        }
+      </div>
+    }
+    <p class="muted hint">The employee code is assigned automatically. The variable-pay target starts at the default for the role and can be changed on the profile.</p>
+
+    @if (formError(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
+    }
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cancel</button>
+  <button mat-flat-button type="submit" form="add-employee" [disabled]="saving()">{{ saving() ? 'Adding…' : 'Add employee' }}</button>
+</mat-dialog-actions>

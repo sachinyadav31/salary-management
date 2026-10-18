@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { handlesErrors } from './problem-interceptor';
 import {
-  AwardBonusRequest, Bonus, BulkChangeRequest, BulkPreview, BulkResult, CareerEvent, EmployeeDetail, EmployeeStatus, EmployeeSummary, PageResponse, RecordSalaryChangeRequest, SalaryChangeResponse,
+  AwardBonusRequest, Bonus, CreateEmployeeRequest, BulkChangeRequest, BulkPreview, BulkResult, CareerEvent, EmployeeDetail, EmployeeStatus, EmployeeSummary, PageResponse, RecordSalaryChangeRequest, SalaryChangeResponse,
   SalaryHistoryItem, UpdateEmployeeRequest,
 } from './models';
 
@@ -47,6 +47,11 @@ export class EmployeeApi {
   }
 
   // Writes: errors (400 field errors, 409 conflicts) are shown by the form itself, not the global snackbar.
+
+  /** Hires someone; returns them with their generated employee code. */
+  create(body: CreateEmployeeRequest): Observable<EmployeeDetail> {
+    return this.http.post<EmployeeDetail>('/api/employees', body, { context: handlesErrors() });
+  }
 
   update(id: number, body: UpdateEmployeeRequest): Observable<EmployeeDetail> {
     return this.http.put<EmployeeDetail>(`/api/employees/${id}`, body, { context: handlesErrors() });

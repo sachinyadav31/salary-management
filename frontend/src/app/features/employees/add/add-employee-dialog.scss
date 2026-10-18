@@ -1,0 +1,38 @@
+:host { display: block; }
+
+.grid { display: grid; gap: 4px; padding-top: 6px; }
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+
+  .grow { flex: 1 1 200px; }
+  .level { width: 110px; }
+}
+mat-form-field { width: 100%; }
+.row mat-form-field { width: auto; }
+
+.band-preview {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--pa-surface);
+  border: 1px solid var(--pa-border);
+}
+.band-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  font-size: 13px;
+}
+.position { margin-left: auto; }
+.position.below { color: var(--pa-below); }
+.position.within { color: var(--pa-within); }
+.position.above { color: var(--pa-above); }
+
+.muted { color: var(--pa-muted); }
+.hint { margin: 0; font-size: 12.5px; }
+.form-error { margin: 8px 0 0; color: var(--pa-below); font-size: 13px; }

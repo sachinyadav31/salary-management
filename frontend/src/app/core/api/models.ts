@@ -285,3 +285,28 @@ export interface BulkResult {
   skipped: number;
   alreadyApplied: boolean;
 }
+
+/** Amount only: the currency always comes from the country. The server assigns the employee code. */
+export interface CreateEmployeeRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  countryCode: string;
+  departmentId: number;
+  jobTitle: string;
+  level: JobLevel;
+  hireDate: string;
+  salaryAmount: string;
+}
+
+/** A pay band with how many active employees sit below, within and above it. */
+export interface PayBandSummary {
+  countryCode: string;
+  countryName: string;
+  level: JobLevel;
+  band: PayBand;
+  headcount: number;
+  below: number;
+  within: number;
+  above: number;
+}

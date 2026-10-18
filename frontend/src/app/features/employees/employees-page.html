@@ -70,6 +70,9 @@
     @if (filtered()) {
       <button mat-button type="button" (click)="clearFilters()">Clear filters</button>
     }
+    <button mat-flat-button type="button" (click)="addEmployee()">
+      <mat-icon>person_add</mat-icon> Add employee
+    </button>
     <button mat-stroked-button type="button" (click)="openBulkChange()" [disabled]="!total()"
             matTooltip="Give everyone in this view a raise or a one-off bonus, with a preview first">
       <mat-icon>group_add</mat-icon> Bulk change

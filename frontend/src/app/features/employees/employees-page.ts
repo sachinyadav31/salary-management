@@ -24,6 +24,7 @@ import { BandBar } from '../../shared/band-bar';
 import { CompaBadge } from '../../shared/compa-badge';
 import { countryFlag } from '../../shared/flag';
 import { MoneyPipe } from '../../shared/money';
+import { openAddEmployee } from './add/add-employee-dialog';
 import { BulkChangeData, BulkChangeDialog } from './bulk/bulk-change-dialog';
 import { describeSelection, selectionCurrency } from './bulk/bulk-change';
 import { DEFAULT_QUERY, DirectoryQuery, PAGE_SIZES, fromQueryParams, hasFilters, toApiParams, toQueryParams } from './directory-query';
@@ -144,6 +145,10 @@ export class EmployeesPage {
 
   protected clearFilters(): void {
     this.update({ ...DEFAULT_QUERY, sort: this.query().sort, size: this.query().size });
+  }
+
+  protected addEmployee(): void {
+    openAddEmployee(this.dialog, this.router, this.api);
   }
 
   /** Raise or bonus for everyone the current filters select (all pages, not just this one). */
