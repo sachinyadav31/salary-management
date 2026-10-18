@@ -89,6 +89,14 @@ class EmployeeServiceTest {
     }
 
     @Test
+    void rejectsImplausibleHireDates() {
+        assertThatThrownBy(() -> service.create(new CreateEmployee("A", "B", "typo@acme.test", "US", 1,
+                "Engineer", JobLevel.L1, LocalDate.of(2062, 1, 1), new BigDecimal("100"))))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("at most 1 year ahead");
+        assertThat(employees.existsByEmail("typo@acme.test")).isFalse();
+    }
+
+    @Test
     void rejectsUnknownCountryAndDepartment() {
         assertThatThrownBy(() -> service.create(newHire("ZZ", "100")))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("country");

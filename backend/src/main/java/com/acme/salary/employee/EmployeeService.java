@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
@@ -56,6 +57,7 @@ public class EmployeeService {
         Country country = countries.findById(cmd.countryCode())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown country: " + cmd.countryCode()));
         Department department = department(cmd.departmentId());
+        HireDates.check(cmd.hireDate(), LocalDate.now(clock));
         String email = normaliseEmail(cmd.email());
         if (employees.existsByEmail(email)) {
             throw new ConflictException("An employee with email " + email + " already exists");
