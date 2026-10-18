@@ -1,0 +1,31 @@
+name: Keep Render warm
+
+# Render's free tier sleeps after ~15 minutes without traffic, and waking it takes 2–3 minutes (JVM start + seeding
+# on 0.1 CPU). Ping the public health endpoint often enough that it never falls asleep.
+# Scheduled workflows run from the default branch only, and GitHub may delay them by a few minutes under load,
+# so the interval leaves headroom below the 15-minute limit.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: keep-warm
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  ping:
+    name: Ping /actuator/health
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      APP_URL: ${{ vars.RENDER_APP_URL || 'https://salary-management-sg7p.onrender.com' }}
+    steps:
+      # A cold start can take a few minutes, so retry instead of failing on the first 502 from Render's proxy.
+      - name: Ping until healthy
+        run: |
+          curl --fail --silent --show-error --location \
+            --max-time 60 --retry 8 --retry-delay 20 --retry-all-errors \
+            "$APP_URL/actuator/health"

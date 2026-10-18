@@ -47,7 +47,10 @@ push to main ──► GitHub Actions CI ──► Render (auto-deploy after CI 
 ## Free-tier trade-offs (deliberate for a demo)
 
 - **Sleeps after ~15 min idle.** The first request afterwards wakes the service (JVM start on 0.1 CPU).
-  Open the link once before a demo.
+  The `Keep Render warm` workflow (`.github/workflows/keep-warm.yml`) pings `/actuator/health` every 10 minutes so
+  it stays awake. One always-on service uses ~744 of the free tier's 750 instance hours a month. GitHub pauses
+  scheduled workflows after 60 days without repository activity, and can delay a run under load, so open the link
+  once before a demo anyway. Override the URL with the `RENDER_APP_URL` repository variable.
 - **Ephemeral disk.** The SQLite file is lost on every deploy or restart. Seed-on-startup brings back the same
   deterministic 10,000 employees, so the demo always works, but edits made in the demo don't persist.
 - **Production path:** a persistent disk (paid plan) for SQLite, or Postgres for multiple instances. Flyway
