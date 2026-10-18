@@ -22,6 +22,9 @@ The demo data is synthetic and resets on every deploy.
   below their pay band"*, each linking to exactly those people.
 - **Employee directory**: search, filters (country, department, level, status, band position, compa-ratio), sorting
   and paging done in the database; every view is a shareable URL; export the filtered list to CSV.
+- **Add employees**: a hiring form where the country sets the currency, the employee code is generated, and the
+  starting salary is shown against the pay band (compa-ratio) before saving.
+- **⌘K search**: find anyone by name, email or employee code from any page, or jump to a view or action.
 - **Employee detail**: pay band bar and compa-ratio, base + variable target + bonuses, and one timeline of salary
   changes, career events (promotions, title/department moves, deactivation) and bonuses, each with who recorded it.
 - **Salary changes**: merit raises, annual reviews (1 April cycle), promotions, market adjustments and corrections;

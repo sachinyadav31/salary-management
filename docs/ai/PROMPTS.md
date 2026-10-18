@@ -323,3 +323,16 @@ For each phase: plan → review the plan → implement test-first → run tests 
 - **Caught while updating the docs:** the local dashboard showed $0 variable pay and $0 bonuses. The local SQLite
   file predated the new seed (the seeder skips a non-empty database), so it never got the new data. Production is
   unaffected (fresh disk on every deploy), but it was a reminder to re-measure demo numbers from a clean database.
+
+### Phase 22 — Missing basics: add employee and ⌘K
+- Prompted by "how do we add employees? basic is missing — can you think of more missing basics". Checked the app
+  against its own requirements: "create" was promised and the API had it, but there was no screen; the ⌘K palette
+  promised under Experience didn't exist either. Pay bands can't be viewed or edited yet (proposed, not built).
+- Add employee: the country fixes the currency, the server assigns the code, and the salary is previewed against the
+  pay band before saving. While reading the create path I found nothing limited the hire date (1900 or 2062 were
+  accepted), so a small pure rule now allows 1950 to one year ahead, mirrored in the form.
+- ⌘K: people from the existing directory search, commands as plain links, combobox/listbox ARIA.
+- **Caught by the production build, not by tests:** the first palette commit grew the initial bundle from 567 kB to
+  788 kB because the app shell imported it (and the add-employee form behind it) eagerly. Fixed by loading the palette
+  on first use and resolving MatDialog inside that chunk: back to 570 kB. The bundle budget did its job as a tripwire;
+  the lesson is to run the production build before committing UI changes, not only after.

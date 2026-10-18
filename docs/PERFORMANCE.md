@@ -77,7 +77,8 @@ data, so preview and apply cost the same and can't disagree.
 ## Frontend bundle
 | Chunk | Raw | Transferred (compressed) |
 |---|---|---|
-| Initial (shell, router, Material core + overlay) | 534 kB | 135 kB |
+| Initial (shell, router, Material core + overlay) | 570 kB | 146 kB |
+| ⌘K palette (lazy, loaded on first open) | 8 kB | 3 kB |
 | Employees page (lazy) | 91 kB | 20 kB |
 | Employee drawer (lazy) | 88 kB | 21 kB |
 | Insights page (lazy) | 31 kB | 9 kB |

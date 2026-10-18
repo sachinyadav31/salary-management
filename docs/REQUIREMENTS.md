@@ -1,4 +1,4 @@
-# Salary Management — Requirements (v0.4, draft)
+# Salary Management — Requirements (v0.5, draft)
 
 ## Goal
 Replace ACME's Excel-based salary tracking with a web app where the **HR Manager** can (1) maintain salary data for ~10,000 employees across countries and (2) quickly answer "how do we pay people?" questions without building spreadsheets.
@@ -15,7 +15,8 @@ Replace ACME's Excel-based salary tracking with a web app where the **HR Manager
 
 ## In scope
 1. **Employee directory**: server-side paginated table with search (name, email, employee code), filters (country, department, job title, level) and sorting.
-2. **Employee CRUD**: create, view, edit and deactivate employees, with validation (unique email/code, positive salary, currency must match country).
+2. **Employee CRUD**: create, view, edit and deactivate employees, with validation (unique email/code, positive salary,
+   currency must match country, plausible hire date). Hiring shows where the starting salary lands in the pay band.
 3. **Salary changes with history**: record a change (new amount, effective date, reason: annual review, promotion,
    merit raise, market adjustment or correction). History is append-only, and the current salary is always the latest
    effective record. ACME runs one review cycle: annual reviews take effect on 1 April.
@@ -76,6 +77,8 @@ accent, serif headings, pill buttons); the product itself stays ACME's "Pay Atla
 Java 21 · Spring Boot 4 · Spring Data JPA · **SQLite** · Flyway migrations · Angular 20 with Angular Material and Apache ECharts · Docker on Render.
 
 ## Changelog
+- **v0.5**: reviewing the app against this document found two promises missing from the UI: adding an employee
+  (the API existed) and the ⌘K search. Both built; hire dates are now limited to 1950 – one year ahead.
 - **v0.4**: one 1 April review cycle, merit raises, career history, variable-pay targets, bonus ledger, bulk raise or
   bonus with preview. Driven by HR practice: hikes and bonuses for good work, and changes applied to whole groups.
 - **v0.3**: sign-in with session cookies, audit of who changed salaries and profiles, light-only theme.
