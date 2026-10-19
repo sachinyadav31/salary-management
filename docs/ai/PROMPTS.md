@@ -336,10 +336,3 @@ For each phase: plan → review the plan → implement test-first → run tests 
   788 kB because the app shell imported it (and the add-employee form behind it) eagerly. Fixed by loading the palette
   on first use and resolving MatDialog inside that chunk: back to 570 kB. The bundle budget did its job as a tripwire;
   the lesson is to run the production build before committing UI changes, not only after.
-
-### Phase 23 — Keep the Render demo awake
-- Prompted by "add github workflow to keep render warm". A scheduled workflow pings the public `/actuator/health`
-  every 10 minutes (free tier sleeps after ~15), with retries long enough to ride out a cold start, plus a manual
-  trigger. No permissions, no secrets; the URL can be overridden with the `RENDER_APP_URL` repository variable.
-- Limits written down rather than hidden: GitHub delays schedules under load and pauses them after 60 days without
-  repository activity, and one always-on service uses ~744 of the free tier's 750 instance hours a month.

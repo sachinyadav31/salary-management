@@ -141,8 +141,7 @@ The goal throughout was the brief's "not the most complex system, but good engin
   pass.
 - **Trade-offs**: the free tier sleeps after ~15 minutes (first request takes ~1 minute) and has an ephemeral disk, so
   the database resets on each deploy and the deterministic seed recreates the same 10,000 employees. Edits made in the
-  demo don't survive a restart. Production would use a persistent disk or Postgres. A scheduled GitHub workflow pings
-  the health endpoint every 10 minutes to keep the demo awake (best effort: GitHub can delay or pause schedules).
+  demo don't survive a restart. Production would use a persistent disk or Postgres.
 
 ### 19. Tests as the safety net for AI-assisted work
 - ~210 backend tests (unit, slice, integration, architecture) and ~80 frontend tests. The AI-assisted workflow and
