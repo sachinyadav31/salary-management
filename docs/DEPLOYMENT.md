@@ -47,7 +47,8 @@ push to main ──► GitHub Actions CI ──► Render (auto-deploy after CI 
 ## Free-tier trade-offs (deliberate for a demo)
 
 - **Sleeps after ~15 min idle.** The first request afterwards wakes the service (JVM start on 0.1 CPU).
-  Open the link once before a demo.
+  A scheduled GitHub Action (`keep-warm.yml`) pings `/actuator/health` every 10 minutes to keep it awake. GitHub
+  can delay scheduled runs, so open the link once before a demo anyway.
 - **Ephemeral disk.** The SQLite file is lost on every deploy or restart. Seed-on-startup brings back the same
   deterministic 10,000 employees, so the demo always works, but edits made in the demo don't persist.
 - **Production path:** a persistent disk (paid plan) for SQLite, or Postgres for multiple instances. Flyway
