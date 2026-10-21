@@ -6,6 +6,8 @@ question HR actually cares about: **how do we pay people, and is it fair?**
 **Live demo:** https://salary-management-sg7p.onrender.com
 (free tier: the first visit after ~15 idle minutes takes about a minute to wake up)
 
+**Video walkthrough:** https://youtu.be/vGd4yoC1FvA
+
 | Demo account | Password |
 |---|---|
 | `hr.admin@acme.example` (Priya Sharma) | `PayAtlas!2026` |
